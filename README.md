@@ -1,4 +1,4 @@
-# tetris-pi
+# tetris-qml
 tetris game based on qt quick
 
 # control
