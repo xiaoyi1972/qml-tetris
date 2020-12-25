@@ -1,0 +1,11 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>tetrisgame.js</file>
+        <file>block.qml</file>
+        <file>Mino.qml</file>
+        <file>feildBlock.qml</file>
+        <file>SetScene.qml</file>
+        <file>controlKey.js</file>
+    </qresource>
+</RCC>
