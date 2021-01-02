@@ -83,7 +83,9 @@ Item {
                     TextField {
                         height: 25
                         text: set_scene.controlkey.config.das_delay
-                        inputMethodHints: Qt.ImhDigitsOnly
+                        validator: IntValidator {
+                            bottom: 0
+                        }
                         width: 50
                         anchors.verticalCenter: parent.verticalCenter
                         onEditingFinished: {
@@ -103,7 +105,9 @@ Item {
                     TextField {
                         height: 25
                         text: set_scene.controlkey.config.das_repeat
-                        inputMethodHints: Qt.ImhDigitsOnly
+                        validator: IntValidator {
+                            bottom: 0
+                        }
                         width: 50
                         anchors.verticalCenter: parent.verticalCenter
                         onEditingFinished: {
@@ -123,7 +127,9 @@ Item {
                     TextField {
                         height: 25
                         text: set_scene.controlkey.config.softDropSpeed
-                        inputMethodHints: Qt.ImhDigitsOnly
+                        validator: IntValidator {
+                            bottom: 0
+                        }
                         width: 50
                         anchors.verticalCenter: parent.verticalCenter
                         onEditingFinished: {
@@ -462,19 +468,54 @@ Item {
          }*/
             }
 
+            Column {
+                spacing: 10
 
-            /*  Column{
-           spacing:10
-         Row{
-              Label{
-                  font.family:"Loma"
-                  font.pixelSize:24
-                  text:"界面设置"
-                  color:"white"
-              }
-          }
+                Label {
+                    font.family: "Loma"
+                    font.pixelSize: 24
+                    text: "录像回放◀"
+                    color: "white"
+                }
 
-         Row{
+                Column {
+                    spacing: 10
+                    ScrollView {
+                        id: view
+                        width: screen.width - 10
+                        height: 100
+                        clip: true
+                        TextArea {
+                            id: replayData
+                            wrapMode: TextEdit.Wrap
+                            selectByMouse: true
+                            font.pixelSize: 14
+                            background: Rectangle {
+                                width: view.width
+                                height: view.height
+                                color: "white"
+                            }
+                            text: ""
+                        }
+                    }
+
+                    Button {
+                        width: 60
+                        height: 30
+                        text: "播放"
+                        onClicked: {
+                            setscene.visible = !setscene.visible
+                            if (setscene.visible == false) {
+                                w.focus = true
+                                w.replay(replayData.text)
+                                replayData.text = ""
+                            }
+                        }
+                    }
+                }
+
+
+                /*   Row{
          spacing:5
          Text{
              font.family:"Loma"
@@ -506,8 +547,8 @@ Item {
            width:50
            anchors.verticalCenter: parent.verticalCenter
          }
-         }
-    }*/
+         }*/
+            }
         }
     }
 }

@@ -13,7 +13,7 @@
       hold:Qt.Key_C,
       restart:Qt.Key_R,
       replay:Qt.Key_Q,
-   //   ai:Qt.Key_J,
+      ai:Qt.Key_W,
       background:"#000000",
       blockstyle:3,
 }
@@ -29,6 +29,7 @@
         obj[config.rotate_reverse]=1
         obj[config.hold]=1
         obj[config.restart]=1
+        obj[config.replay]=1
         obj[config.ai]=1
         if(thiskey in obj)
          real=1

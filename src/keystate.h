@@ -8,7 +8,7 @@ class KeyState
 {
 public:
     KeyState(Tetris *_tetris, const std::function<void()> &_func, std::function<void()>_endFunc = nullptr,
-         bool _isDown = false, bool _noDas = false);
+             bool _isDown = false, bool _noDas = false);
     bool keyDown();//按下
     void keyUp();//弹起
     void dasCall();//移动延迟

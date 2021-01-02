@@ -33,6 +33,6 @@ HEADERS += \
 
 QT += concurrent
 
-INCLUDEPATH += D:/VLD/include
-DEPENDPATH += D:/VLD/include
-LIBS += -LD:/VLD/lib/Win32 -lvld
+#INCLUDEPATH += D:/VLD/include
+#DEPENDPATH += D:/VLD/include
+#LIBS += -LD:/VLD/lib/Win64 -lvld

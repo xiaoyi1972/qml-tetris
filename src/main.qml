@@ -1,4 +1,4 @@
-﻿import QtQuick 2.12
+﻿import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Window 2.15
 import QtQuick.Shapes 1.15
@@ -34,19 +34,19 @@ Window {
 
     Item {
         id: screen
-        width: TetrisGame.blockSize*TetrisGame.maxColumn
-        height: TetrisGame.blockSize*(TetrisGame.maxRow+TetrisGame.RowOver)
+        width: TetrisGame.blockSize * TetrisGame.maxColumn
+        height: TetrisGame.blockSize * (TetrisGame.maxRow + TetrisGame.RowOver)
         anchors.centerIn: parent
         SystemPalette {
             id: activePalette
         }
 
         Shape {
-            id:displayBorder
-            width: TetrisGame.blockSize*TetrisGame.maxColumn
-            height: TetrisGame.blockSize*TetrisGame.maxRow
+            id: displayBorder
+            width: TetrisGame.blockSize * TetrisGame.maxColumn
+            height: TetrisGame.blockSize * TetrisGame.maxRow
             anchors.top: parent.top
-            anchors.topMargin: TetrisGame.blockSize*TetrisGame.RowOver
+            anchors.topMargin: TetrisGame.blockSize * TetrisGame.RowOver
             ShapePath {
                 strokeWidth: 1
                 strokeColor: "black"
@@ -54,14 +54,14 @@ Window {
                 startY: 0
                 PathLine {
                     x: 0
-                    y: TetrisGame.blockSize*(TetrisGame.maxRow)
+                    y: TetrisGame.blockSize * (TetrisGame.maxRow)
                 }
                 PathLine {
-                    x: TetrisGame.blockSize*TetrisGame.maxColumn
-                    y: TetrisGame.blockSize*(TetrisGame.maxRow)
+                    x: TetrisGame.blockSize * TetrisGame.maxColumn
+                    y: TetrisGame.blockSize * (TetrisGame.maxRow)
                 }
                 PathLine {
-                    x: TetrisGame.blockSize*TetrisGame.maxColumn
+                    x: TetrisGame.blockSize * TetrisGame.maxColumn
                     y: 0
                 }
             }
@@ -80,30 +80,25 @@ Window {
                 x: 0
                 y: 0
                 z: 3
-                transformOrigin: fk.Center
+                transformOrigin: Item.Center
                 rotation: 0
                 Behavior on x {
                     id: xb
-                    NumberAnimation {
-                        properties: "x"
-                        duration: fk.xyDuration
-                        easing.type: Easing.OutInQuad
+                    SmoothedAnimation {
+                      duration: fk.xyDuration
                     }
                 }
                 Behavior on y {
                     id: yb
-                    NumberAnimation {
-                        properties: "y"
-                        duration: fk.xyDuration
-                        easing.type: Easing.OutInQuad
+                    SmoothedAnimation {
+                       duration: fk.xyDuration
                     }
                 }
                 Behavior on rotation {
                     id: rsb
-                    NumberAnimation {
-                        properties: "rotation"
+                    RotationAnimation {
                         duration: fk.rDuration
-                        easing.type: Easing.OutInQuad
+                        direction: RotationAnimator.Shortest
                     }
                 }
                 function toggleBehavior(is) {
@@ -121,24 +116,21 @@ Window {
                 x: 0
                 y: 0
                 z: 1
-                transformOrigin: shadow.Center
+                transformOrigin: Item.Center
                 rotation: 0
                 Behavior on x {
                     id: xb1
-                    NumberAnimation {
-                        properties: "x"
+                    SmoothedAnimation {
                         duration: shadow.xyDuration
-                        easing.type: Easing.OutInQuad
                     }
                 }
                 Behavior on y {
                     id: yb1
-                    NumberAnimation {
-                        properties: "y"
+                    SmoothedAnimation {
                         duration: shadow.xyDuration
-                        easing.type: Easing.OutInQuad
                     }
                 }
+
 
                 /* Behavior on rotation {
                      id:rsb1
@@ -162,8 +154,8 @@ Window {
                 id: nexts
                 font.pointSize: 16
                 text: "预览"
-                anchors.top: screen.top
-                anchors.left: screen.right
+             //   anchors.top: screen.top
+             //   anchors.left: screen.right
             }
             Column {
                 id: nextsC
@@ -189,7 +181,7 @@ Window {
             }
             Mino {
                 id: hold
-                anchors.right: screen.left
+             //   anchors.right: screen.left
             }
         }
 

@@ -11,6 +11,7 @@
 #include <QMutex>
 #include <tetrisBot.h>
 #include<algorithm>
+#include<chrono>
 #include<limits>
 #include <QtConcurrent>
 class Task: public QThread
@@ -33,20 +34,26 @@ class Tetris: public QQuickItem
 {
     Q_OBJECT
 public:
-    struct keyConfig
-    {
-    int leftKey = Qt::Key_Left;
-    int rightKey = Qt::Key_Right;
-    int softDropKey = Qt::Key_Down;
-    int harddropKey = Qt::Key_Space;
-    int cwKey = Qt::Key_Z;
-    int ccwKey = Qt::Key_X;
-    int holdKey = Qt::Key_C;
-    int restartKey = Qt::Key_R;
-    int dasDelay = 65;
-    int arrDelay = 16;
-    int softdropDelay = 8;
-    int replay = Qt::Key_Q;
+    struct keyConfig {
+        int leftKey = Qt::Key_Left;
+        int rightKey = Qt::Key_Right;
+        int softDropKey = Qt::Key_Down;
+        int harddropKey = Qt::Key_Space;
+        int cwKey = Qt::Key_Z;
+        int ccwKey = Qt::Key_X;
+        int holdKey = Qt::Key_C;
+        int restartKey = Qt::Key_R;
+        int dasDelay = 65;
+        int arrDelay = 16;
+        int softdropDelay = 8;
+        int replay = Qt::Key_Q;
+    };
+
+    struct gameData {
+        int clear = 0;
+        int b2b = 0;
+        int combo = 0;
+        bool comboState = false;
     };
 
     Tetris();
@@ -68,45 +75,45 @@ public:
 
     //辅助
     void opers(Oper a);//操作
-    void update();//更新
-    void replay();//重播
+    Q_INVOKABLE void replay(const QString &str = ""); //重播
     void replayFunc();
-    qint64 timeRecord();//录像操作时间点
-    void toFresh (QVector<Pos> &,QVector<int>&);
+    int timeRecord();//录像操作时间点
+    void toFresh(QVector<Pos> &, QVector<int> &);
     QVector<Oper> Tetris::caculateBot(TetrisNode &, int); //bot计算
     void botCall();//bot调用执行操作
     void ExampleMap();//使用地图;
 
     void sleepTo(int msec)
     {
-    QEventLoop eventloop;
-    QTimer::singleShot(msec, &eventloop, SLOT(quit()));
-    eventloop.exec();
+        QEventLoop eventloop;
+        QTimer::singleShot(msec, Qt::PreciseTimer, &eventloop, SLOT(quit()));
+        eventloop.exec();
     }
 
-    Q_INVOKABLE void passPiece();
-    Q_INVOKABLE void PassMap();
+    Q_INVOKABLE void passPiece(bool newPiece = false);
+    Q_INVOKABLE void passMap();
     Q_INVOKABLE void passHold(bool ifForce = false);
     Q_INVOKABLE void passNext(bool ifForce = false);
     Q_INVOKABLE void setKeyboard(QVariantMap a);
 
     Task task;
     keyConfig keyconfig;
-    int delta = 0;
     int handle, botHandle = -1;
-
+    int digRows=10;
+    bool digMod=false;
 private:
     bool tg = false;
     Random rand;
+    gameData gamedata;
     TetrisNode tn{rand.getOne()};
     TetrisMap map{10, 20};
     Hold holdSys{&rand};
-    Recorder record{rand.seed, std::bind(&Tetris::opers, this, std::placeholders::_1)};
+    Recorder record{rand.seed};
     KeyState leftKey{this, std::bind(&Tetris::left, this)};
     KeyState rightKey{this, std::bind(&Tetris::right, this)};
     KeyState softDropKey{this, std::bind(&Tetris::softdrop, this), nullptr, true};
     QMutex mutex;
-    QDateTime startTime;
+    std::chrono::time_point<std::chrono::high_resolution_clock> startTime;
     bool isReplay = false;
 
 signals:

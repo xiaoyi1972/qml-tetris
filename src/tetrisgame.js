@@ -56,13 +56,17 @@ function mapFresh(_data){
     let map=_data.map;
  //   console.log(map)
     for(let i =0;i<map.length;i++){
+        if(board[i] != null){
+             board[i].destroy(0)
+            board[i]=null
+        }
         if(map[i]!=-1){
     if (board[i] == null){
         let x=parseInt(i/maxColumn)
         let y= i%maxColumn
        // console.log(x,y)
-        createBlock(y,x, board, background);
-       board[i].color = getTypeColor(map[i]);
+        createBlock(y,x, board, background,true)
+       board[i].color = getTypeColor(map[i])
     }
     }
     }
@@ -111,7 +115,7 @@ function hardDropFresh(_data) {
 
 function fresh(_data) {
     let banAnimation = false
-    if (_data.active.type != fk.minoType) {
+    if (_data.isNewSpawn) {
          banAnimation = true;
         fk.toggleBehavior(false);
         shadow.toggleBehavior(false);
@@ -124,23 +128,12 @@ function fresh(_data) {
     }*/
     fk.width = minos[_data.active.type].length * blockSize;
     fk.height = minos[_data.active.type].length * blockSize;
-    if (!banAnimation) {
-        if (fk.rs == 0 && _data.active.rs == 3) {
-            rsb.enabled = false
-            fk.rotation += 360;
-            rsb.enabled = true;
-        }
-        else if (fk.rs == 3 && _data.active.rs == 0) {
-            rsb.enabled = false
-            fk.rotation -= 360;
-            rsb.enabled = true;
-        }
-    }
     fk.rotation = _data.active.rs * 90
     fk.rs = _data.active.rs
     fk.x = blockSize * _data.active.x
     fk.y = blockSize * _data.active.y
     fk.toggleBehavior(true);
+
     if (_data.active.drop == 0)
         shadow.visible = false;
     else {
@@ -190,6 +183,7 @@ function freshHold(_data) {
 
 function createActive(type, parent, isShadow = false) {
     parent.minoType = type
+    parent.visible=false
     for (let i of parent.board) {
         if (i != null){
             i.visible=false
@@ -212,10 +206,11 @@ function createActive(type, parent, isShadow = false) {
             }
         }
     }
+    parent.visible=true
 }
 
 
-function createBlock(column, row, board = null, parent) {
+function createBlock(column, row, board = null, parent,instant=false) {
     if (component == null) {
         component = Qt.createComponent("feildBlock.qml");
     }
@@ -224,6 +219,8 @@ function createBlock(column, row, board = null, parent) {
         if (dynamicObject == null) {
             return false;
         }
+        if(instant)
+        dynamicObject.banFlash(false);
         dynamicObject.banAimate(false);
         dynamicObject.x = column * (blockSize) + 0.25;
         dynamicObject.y = row * (blockSize) + 0.25;
@@ -231,6 +228,8 @@ function createBlock(column, row, board = null, parent) {
         dynamicObject.height = blockSize_;
         dynamicObject.spawned = true;
         dynamicObject.banAimate(true);
+        if(instant)
+        dynamicObject.banFlash(true);
         if (board != null)
             board[index(column, row)] = dynamicObject;
     } else {

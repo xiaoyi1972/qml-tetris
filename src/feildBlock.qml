@@ -9,14 +9,14 @@ Rectangle {
 
     Behavior on y {
         id: that
-        NumberAnimation {
-            properties: "y"
+        SmoothedAnimation {
+            velocity: 200
             duration: 100
-            easing.type: Easing.Linear
         }
     }
 
     Behavior on opacity {
+        id:opacityAni
         NumberAnimation {
             properties: "opacity"
             duration: 100
@@ -48,5 +48,8 @@ Rectangle {
 
     function banAimate(is) {
         that.enabled = is
+    }
+    function banFlash(is){
+       opacityAni.enabled=is
     }
 }
