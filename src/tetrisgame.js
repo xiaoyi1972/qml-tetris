@@ -28,6 +28,8 @@ function index(column, row) {
 }
 
 function startNewGame() {
+    feildLayer.range=1
+    shadow.opacity = 1
     for (let i = 0; i < maxIndex; i++) {
         if (board[i] != null) {
             board[i].destroy();
@@ -75,10 +77,16 @@ function mapFresh(_data){
 function hardDropFresh(_data) {
     let changes = _data.changes;
     let clear = _data.clear;
+
     for (let i  of changes) {
         if (board[index(i.x, i.y)] == null)
             createBlock(i.x, i.y, board, background);
         board[index(i.x, i.y)].color = getTypeColor(i.type)
+    }
+
+    if(_data.dead){
+   feildLayer.playDead();
+    return
     }
 
     if (clear.clearArr.length != 0) {
@@ -119,13 +127,10 @@ function fresh(_data) {
          banAnimation = true;
         fk.toggleBehavior(false);
         shadow.toggleBehavior(false);
-        createActive(_data.active.type, fk);
-        createActive(_data.active.type, shadow, true);
+        createActive(_data.active.type, fk, false , _data.dead);
+        createActive(_data.active.type, shadow, true, _data.dead);
     }
-   /* if (banAnimation) {
-        fk.toggleBehavior(false);
-        shadow.toggleBehavior(false);
-    }*/
+
     fk.width = minos[_data.active.type].length * blockSize;
     fk.height = minos[_data.active.type].length * blockSize;
     fk.rotation = _data.active.rs * 90
@@ -135,9 +140,9 @@ function fresh(_data) {
     fk.toggleBehavior(true);
 
     if (_data.active.drop == 0)
-        shadow.visible = false;
+        shadow.opacity = 0;
     else {
-        shadow.visible = true
+        shadow.opacity = 1
         shadow.width = minos[_data.active.type].length * blockSize;
         shadow.height = minos[_data.active.type].length * blockSize;
         shadow.rotation = _data.active.rs * 90
@@ -174,34 +179,40 @@ function freshNext(_data) {
 function freshHold(_data) {
     for (let i = 0; i < hold.children.length; i++){
         hold.children[i].visible=false;
-        hold.children[i].destroy();
+        hold.children[i].destroy(0);
     }
 
     if (_data.type != -1)
         hold.create(_data.type)
 }
 
-function createActive(type, parent, isShadow = false) {
+function createActive(type, parent, isShadow = false,deaded=false) {
     parent.minoType = type
     parent.visible=false
-    for (let i of parent.board) {
+    for (let i  of parent.board) {
         if (i != null){
             i.visible=false
             i.destroy(0);
+            i=null
             }
+    }
+   if(deaded){
+      parent.board.length=0
+      parent.visible=true
+      return;
     }
     parent.board.length = 0
     let len = minos[type].length;
     for (let row = 0; row < len; row++) {
         for (let column = 0; column < len; column++) {
-            let x = createActiveBlock(column, row, parent.board, parent);
             if (minos[type][row][column]) {
+                    let block = createActiveBlock(column, row, parent.board, parent);
                 if (!isShadow)
-                    parent.board[index(column, row)].color = getTypeColor(type);
+                    block.color = getTypeColor(type);
                 else {
-                    parent.board[index(column, row)].color = "transparent";
-                    parent.board[index(column, row)].border.width = 1
-                    parent.board[index(column, row)].border.color = getTypeColor(type);
+                    block.color = "transparent";
+                    block.border.width = 1
+                    block.border.color = getTypeColor(type);
                 }
             }
         }
@@ -232,6 +243,7 @@ function createBlock(column, row, board = null, parent,instant=false) {
         dynamicObject.banFlash(true);
         if (board != null)
             board[index(column, row)] = dynamicObject;
+
     } else {
         return false;
     }
@@ -242,7 +254,6 @@ function createActiveBlock(column, row, board = null, parent) {
     if (activeComponent == null) {
         activeComponent = Qt.createComponent("block.qml");
     }
-
     if (activeComponent.status == Component.Ready) {
         let dynamicObject = activeComponent.createObject(parent);
         if (dynamicObject == null) {
@@ -253,11 +264,10 @@ function createActiveBlock(column, row, board = null, parent) {
         dynamicObject.width = blockSize_
         dynamicObject.height = blockSize_;
         if (board != null)
-            board[index(column, row)] = dynamicObject;
-    } else {
-        return false;
+            board.push(dynamicObject)
+            return dynamicObject;
+            //board[index(column, row)] = dynamicObject;
     }
-    return true;
 }
 
 function nextBlock(type, _nextsList=null,parent) {
@@ -273,7 +283,5 @@ function nextBlock(type, _nextsList=null,parent) {
     } else {
         return false;
     }
-
-
     return true;
 }

@@ -448,9 +448,9 @@ public:
 
     void getBag()
     {
-        //   bag.fill(Piece::I, 7);
-        //bag=QVector<Piece>{Piece::J,Piece::L,Piece::Z,Piece::T,Piece::O,Piece::I};
-        //   return;
+        // bag.fill(Piece::T, 7);
+        //bag=QVector<Piece>{Piece::J,Piece::Z,Piece::S,Piece::J,Piece::Z,Piece::T,Piece::I};
+        //return;
         do {
             auto num = static_cast<Piece>(qrand() % 7);
             if (bag.contains(num)) {
@@ -536,6 +536,13 @@ public:
     Recorder(int _seed = -1)
     {
         seed = _seed;
+    }
+
+    void clear()
+    {
+        time.clear();
+        oper.clear();
+        playIndex = 0;
     }
 
     friend QDataStream &operator<<(QDataStream &out, const Recorder &ss)

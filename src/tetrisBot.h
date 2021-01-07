@@ -43,7 +43,7 @@ struct EvalResult {
 };
 
 QVector<TetrisNode> search(TetrisNode &, TetrisMap &);
-auto make_path(TetrisNode &, TetrisNode &, TetrisMap &)->QVector<Oper>;
+auto make_path(TetrisNode &, TetrisNode &, TetrisMap &,bool)->QVector<Oper>;
 TetrisBot::EvalResult evalute(TetrisNode &, TetrisMap &, int);
 TetrisBot::Status get(const TetrisBot::EvalResult &, TetrisBot::Status &, Piece, QVector<Piece> *, int);
 }
@@ -63,8 +63,6 @@ private:
     using treeQueue = std::priority_queue<TreeNode *, std::vector<TreeNode *>, CNP>;
     QVector < treeQueue>level; //保存每一个等级层
     QVector < treeQueue>extendedLevel; //保存每一个等级层
-    //  QVector < stable_priority_queue<TreeNode *, CNP>>level; //保存每一个等级层
-    // QVector < stable_priority_queue<TreeNode *, CNP>>extendedLevel; //保存每一个等级层
     QVector<Piece>nexts, noneHoldFirstNexts; //预览队列
     int width = 0;
     bool isOpenHold = true;

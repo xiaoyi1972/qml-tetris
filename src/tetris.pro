@@ -2,6 +2,7 @@ QT += quick
 
 CONFIG += c++17
 CONFIG +=qtquickcompiler
+#CONFIG += qtquickcompilerqmake
 
 #CONFIG += qmltypes
 #QML_IMPORT_NAME = Tetris

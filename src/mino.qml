@@ -1,5 +1,5 @@
-﻿import QtQuick 2.0
-
+﻿
+import QtQuick 2.0
 Item {
     property int type: -1
     property var blockSize: 19
@@ -22,9 +22,9 @@ Item {
             let len1 = showMinos[type][0].length
             for (var row = 0; row < len; row++) {
                 for (var column = 0; column < len1; column++) {
-                    let obj = createBlock(column, row, root, root.blockSize,
-                                          root.blockSize - 0.5)
                     if (showMinos[type][row][column]) {
+                        let obj = createBlock(column, row, root, root.blockSize,
+                                              root.blockSize - 0.5)
                         obj.color = getTypeColor(type)
                     }
                 }
@@ -70,7 +70,6 @@ Item {
                     console.log(component.errorString())
                     return false
                 }
-
                 dynamicObject.x = column * (blockSize) + 0.25
                 dynamicObject.y = row * (blockSize) + 0.25
                 dynamicObject.width = blockSize_

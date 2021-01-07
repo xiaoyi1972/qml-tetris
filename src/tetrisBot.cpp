@@ -123,12 +123,12 @@ void Tool::sleepTo(int msec)
 QVector<TetrisNode> TetrisBot::search(TetrisNode &_first, TetrisMap &_map)
 {
     QSet<TetrisNode> checked;
-    QVector<info> quene;
+    QVector<info> queue;
     QHash<info, int> results;
-    quene.append(info{_first, 0});
+    queue.append(info{_first, 0});
     checked.insert(_first);
-    while (quene.size() != 0) {
-        auto [node, count] = quene.takeFirst();
+    while (queue.size() != 0) {
+        auto [node, count] = queue.takeFirst();
         auto next = node;
         if (!TetrisNode::shift(next, _map, 0, 1)) {
             auto infoKey = info{next, count};
@@ -136,6 +136,11 @@ QVector<TetrisNode> TetrisBot::search(TetrisNode &_first, TetrisMap &_map)
                 auto keyCount = results.value(infoKey);
                 if (keyCount > count) {
                     results.insert(infoKey, count);
+                } else {
+                    if (next.rotateState == _first.rotateState) {
+                        results.erase(results.find(infoKey));
+                        results.insert(infoKey, count);
+                    }
                 }
             } else {
                 results.insert(infoKey, count);
@@ -146,7 +151,7 @@ QVector<TetrisNode> TetrisBot::search(TetrisNode &_first, TetrisMap &_map)
             if (!checked.contains(next)) {
                 next.lastRotate = false;
                 checked.insert(next);
-                quene.append(info{std::move(next), count + 1});
+                queue.append(info{std::move(next), count + 1});
             }
         }
         next = node;
@@ -154,7 +159,7 @@ QVector<TetrisNode> TetrisBot::search(TetrisNode &_first, TetrisMap &_map)
             if (!checked.contains(next)) {
                 next.lastRotate = false;
                 checked.insert(next);
-                quene.append(info{std::move(next), count + 1});
+                queue.append(info{std::move(next), count + 1});
             }
         }
         next = node;
@@ -162,7 +167,7 @@ QVector<TetrisNode> TetrisBot::search(TetrisNode &_first, TetrisMap &_map)
             if (!checked.contains(next)) {
                 next.lastRotate = true;
                 checked.insert(next);
-                quene.append(info{std::move(next), count + 1});
+                queue.append(info{std::move(next), count + 1});
             }
         }
         next = node;
@@ -170,7 +175,7 @@ QVector<TetrisNode> TetrisBot::search(TetrisNode &_first, TetrisMap &_map)
             if (!checked.contains(next)) {
                 next.lastRotate = true;
                 checked.insert(next);
-                quene.append(info{std::move(next), count + 1});
+                queue.append(info{std::move(next), count + 1});
             }
         }
         next = node;
@@ -178,7 +183,7 @@ QVector<TetrisNode> TetrisBot::search(TetrisNode &_first, TetrisMap &_map)
         if (!checked.contains(next)) {
             next.lastRotate = false;
             checked.insert(next);
-            quene.append(info{std::move(next), count + 1});
+            queue.append(info{std::move(next), count + 1});
         }
     }
     QVector<TetrisNode> result;
@@ -194,7 +199,7 @@ QVector<TetrisNode> TetrisBot::search(TetrisNode &_first, TetrisMap &_map)
     return result;
 }
 
-auto TetrisBot::make_path(TetrisNode &start_node, TetrisNode &land_point, TetrisMap &map)->QVector<Oper>
+auto TetrisBot::make_path(TetrisNode &start_node, TetrisNode &land_point, TetrisMap &map, bool NoSoftToBottom = false)->QVector<Oper>
 {
     //qDebug() << "path:" << Tool::printNode(start_node)<<Tool::printNode(land_point);
     QVector<TetrisNode> node_search;
@@ -216,11 +221,22 @@ auto TetrisBot::make_path(TetrisNode &start_node, TetrisNode &land_point, Tetris
             if (!node_mark.contains(node))
                 break;
             auto result = node_mark.value(node);
-            node = std::get<0>(result);
+            auto next = std::get<0>(result);
+            auto dropToSd = (path.size() > 0 && std::get<1>(result) == Oper::DropToBottom);
+            auto softDropDis = node.pos.y - next.pos.y;
+            /* if(std::get<1>(result)==Oper::DropToBottom){
+                 qDebug()<<Tool::printNode(next)<<Tool::printNode(node)<<(node.pos.y-next.pos.y)<<path.size();
+             }*/
+            node = next;
             if (node.type == Piece::None) {
                 break;
             }
             path.push_front(std::get<1>(result));
+            if (dropToSd && NoSoftToBottom) {
+                //    qDebug()<<"youle";
+                path.remove(0);
+                path.insert(0, softDropDis, Oper::SoftDrop);
+            }
         }
         while (path.size() != 0 && (path[path.size() - 1] == Oper::SoftDrop || path[path.size() - 1] == Oper::DropToBottom)) {
             path.remove(path.size() - 1, 1);
@@ -382,9 +398,9 @@ TetrisBot::EvalResult TetrisBot::evalute(TetrisNode &lp, TetrisMap &map, int cle
         }
 
         auto value = (0.
-                      - m.roof * 100
-                      - m.colTrans  * 160
-                      - m.rowTrans * 130
+                      - m.roof * 128
+                      - m.colTrans  * 120
+                      - m.rowTrans * 120
                       // - m.holes * 60
                       - m.holeLines * 380
                       - m.wellDepth * 100
@@ -400,242 +416,90 @@ TetrisBot::EvalResult TetrisBot::evalute(TetrisNode &lp, TetrisMap &map, int cle
     };
 
 
-
     auto tspinDetect = [&]() {
-        auto sky_tslot = [](TetrisMap & map)->std::tuple<bool, int, int, int> {
-            auto score = 0;
-            for (auto x = 0; x < map.width; x++)
-                for (auto y = map.roof; y < map.height; y++)
-                {
-                    auto y0 = map.data[y];
-                    auto y1 = y - 1 > -1 ? map.data[y - 1] : 0;
-                    auto y2 = y - 2 > -1 ? map.data[y - 2] : 0;
-                    if (((y0 >> x & 7) == 5) && ((y1 >> x & 7) == 0)) {
-                        if (BitCount(y0) == map.width - 1) {
-                            score += 1;
-                            if (BitCount(y1) == map.width - 3) {
-                                score += 2;
-                                if (((y2 >> x & 7) == 4 || (y2 >> x & 7) == 1)) {
-                                    score += 2;
-                                    for (auto y1 = y - 3; y1 > 0; y1--) {
-                                        if (map(y1, x + 1)) {
-                                            score = 0;
-                                            break;
+        bool finding2 = true;
+        bool finding3 = true;
+        for (int y = map.roof; (finding2 || finding3) && y < map.height; ++y) {
+            auto y0 = map.data[y];
+            auto y1 = y - 1 > -1 ? map.data[y - 1] : 0;
+            auto y2 = y - 2 > -1 ? map.data[y - 2] : 0;
+            auto y3 = y - 3 > -1 ? map.data[y - 3] : 0;
+            auto y4 = y - 4 > -1 ? map.data[y - 4] : 0;
+            for (int x = 0; finding2 && x < map.width ; ++x) {
+                if (((y0 >> x & 7) == 5) && ((y1 >> x & 7) == 0)) {
+                    if (BitCount(y0) == map.width - 1) {
+                        evalResult.t2Value += 1;
+                        if (BitCount(y1) == map.width - 3) {
+                            evalResult.t2Value += 2;
+                            if (((y2 >> x & 7) == 4 || (y2 >> x & 7) == 1)) {
+                                evalResult.t2Value += 2;
+                                finding2 = false;
+                            }
+                        }
+                    }
+                }
+            }
+            for (int x = 0; finding3 && x < map.width - 2; ++x) {
+                if ((y0 >> x & 7) == 3 && (y1 >> x & 7) == 1 && x < map.width - 3) {
+                    auto value = 0;
+                    if (BitCount(y0) == map.width - 1) {
+                        //  qDebug()<<"l";
+                        value += 1;
+                        if (BitCount(y1) == map.width - 2) {
+                            value += 1;
+                            if ((y2 >> x & 7) == 3 && (y3 >> x & 7) == 0) {
+                                value += 2;
+                                if (BitCount(y2) == map.width - 1) {
+                                    value += 2;
+                                    if ((y3 >> x & 7) == 0) {
+                                        value += 1;
+                                        if ((y4 >> x & 7) == 4) {
+                                            value += 1;
+                                        } else {
+                                            value -= 2;
                                         }
-                                    }
-                                    return {true, y - 2, x, score};
+                                    } else
+                                        value = 0;
                                 }
                             }
                         }
                     }
+                    if (value > 3)
+                        finding3 = false;
+                    evalResult.t3Value += value;
                 }
-            return {false, -1, -1, score};
-        };
 
-        struct TstTwist {
-            bool point_left;
-            bool  is_tslot;
-            int cover;
-            int  x;
-            int  y;
-            bool row1;
-            bool row2;
-            bool row3;
-            int filledRows;
-            bool rPoint;
-            TstTwist(bool _point_left, int _cover, int _x, int _y, bool _rPoint = false)
-            {
-                point_left = _point_left;
-                cover = _cover;
-                is_tslot = (_cover >= 3);
-                x = _x;
-                y = _y;
-                rPoint = _rPoint;
-                filledRows = int(row1) + int(row2) + int(row3);
-            }
-        };
-
-        auto cave_tslot = [](TetrisMap & map, bool West)->std::tuple<bool, int, int> {
-            for (auto x = 0; x < map.width; x++)
-                for (auto y = map.roof; y < map.height; y++)
-                {
-                    auto node = TetrisNode{Piece::T, Pos{y, x}, (!West) ? 1 : 3};
-                    auto dropDis = node.getDrop(map);
-                    if (dropDis == 0 || dropDis % 2 == 1)
-                        return {false, -1, -1};
-                    auto i = (x + dropDis);
-                    auto &j = y;
-                    if (West) {
-                        if (map(i, j) && map(i + 2, j) && map(i + 2, j + 2) && !map(i + 1, j))
-                            return {true, i, j};
-                        else if (map(i + 1, j) && map(i + 1, j + 3) && map(i + 3, j + 1) && map(i + 3, j + 3) && !map(i + 2, j + 2) && !map(i + 2, j + 3) && !map(i + 3, j + 2))
-                            return {true, i + 1, j + 1};
-                    } else {
-                        if (map(i, j + 2) && map(i + 2, j + 2) && map(i + 2, j) && !map(i + 1, j + 2))
-                            return {true, j, i};
-                        else if (map(i + 1, j - 1) && map(i + 3, j - 1) && map(i + 3, j + 1) && map(i + 1, j + 2) && !map(i + 2, j - 1) && !map(i + 2, j) && !map(i + 3, j))
-                            return {true, i + 1, j - 1};
-                    }
-                    return {false, -1, -1};
-                }
-        };
-
-        auto tst_twist = [](TetrisMap & map)->std::tuple<bool, TstTwist> {
-            for (auto x = -1; x < map.width - 2; x++)
-                for (auto y = map.roof; y < map.height; y++)
-                {
-                    auto &i = y;
-                    auto &j = x;
-                    auto isTstSlot_Left =
-                    map(i, j) && !map(i + 1, j) && !map(i + 2, j) && !map(i + 3, j) && !map(i + 3, j + 1) && !map(i + 4, j) && map(i, j + 3) == map(i + 1, j + 3) &&
-                    (!bool(map(i + 4, j + 1)) ? map(i + 5, j) == 1 : true) &&
-                    !map(i, j + 1) && !map(i, j + 2) && !map(i + 1, j + 1) && !map(i + 1, j + 2);// &&
-
-                    auto isTSlotLeft = (map(i + 2, j - 1) + map(i + 2, j + 1) + map(i + 4, j - 1));
-                    if (isTstSlot_Left) {
-                        //qDebug() << "youle left";
-                        QVector<int> grid{1, 2, 1 + int(!map(i + 4, j + 1))};
-                        return{bool(map(i + 2, j + 2)), TstTwist{false, isTSlotLeft, i + 2, j - 1, bool(map(i + 2, j + 2))}
-                              };
-                    }
-
-                    auto isTstSlot_Right =
-                            map(i, j + 3) && !map(i + 1, j + 3) && !map(i + 2, j + 3) && !map(i + 3, j + 3) && !map(i + 3, j + 2) && !map(i + 4, j + 3) && map(i, j) == map(i + 1, j) &&
-                            (!bool(map(i + 4, j + 2)) ? map(i + 5, j + 3) == 1 : true) &&
-                            !map(i, j + 1) && !map(i, j + 2) && !map(i + 1, j + 1) && !map(i + 1, j + 2);// &&
-
-
-                    auto isTSlotRight = (map(i + 2, j + 2) + map(i + 2, j + 4) + map(i + 4, j + 4));
-
-                    if (isTstSlot_Right) {
-                        //qDebug() << "youle rightt";
-                        QVector<int> grid{1, 2, 1 + int(!map(i + 4, j + 2))};
-                        return { bool(map(i + 2, j + 2)), TstTwist{true, isTSlotRight, i + 2, j + 2, bool(map(i + 2, j + 2))}
-                               };
-                    }
-                }
-            return {false, TstTwist{false, -1, -1, -1}};
-        };
-
-        auto tst_twist1 = [](TetrisMap & map)->std::tuple<bool, TstTwist, int> {
-            auto value1 = 0;
-            for (auto x = 0; x < map.width - 2; x++)
-                for (auto y = map.roof; y < map.height; y++)
-                {
-                    auto y0 = map.data[y];
-                    auto y1 = y - 1 > -1 ? map.data[y - 1] : 0;
-                    auto y2 = y - 2 > -1 ? map.data[y - 2] : 0;
-                    auto y3 = y - 3 > -1 ? map.data[y - 3] : 0;
-                    auto y4 = y - 4 > -1 ? map.data[y - 4] : 0;
-                    if ((y0 >> x & 7) == 3 && (y1 >> x & 7) == 1 && x < map.width - 3) {
-                        auto value = 0;
-                        if (BitCount(y0) == map.width - 1) {
-                            //  qDebug()<<"l";
+                else if ((y0 >> x & 7) == 6 && (y1 >> x & 7) == 4 && x > 0) {
+                    auto value = 0;
+                    if (BitCount(y0) == map.width - 1) {
+                        //     qDebug()<<"r";
+                        value += 1;
+                        if (BitCount(y1) == map.width - 2) {
                             value += 1;
-                            if (BitCount(y1) == map.width - 2) {
-                                value += 1;
-                                if ((y2 >> x & 7) == 3 && (y3 >> x & 7) == 0) {
+                            if ((y2 >> x & 7) == 6 && (y3 >> x & 7) == 0) {
+                                value += 2;
+                                if (BitCount(y2) == map.width - 1) {
                                     value += 2;
-                                    if (BitCount(y2) == map.width - 1) {
-                                        value += 2;
-                                        if ((y3 >> x & 7) == 0) {
+                                    if ((y3 >> x & 7) == 0) {
+                                        value += 1;
+                                        if ((y4 >> x & 7) == 1) {
                                             value += 1;
-                                            if ((y4 >> x & 7) == 4) {
-                                                value += 1;
-                                                return {true, TstTwist{false, y - 2, x + 1, -1}, value};
-                                            } else {
-                                                value -= 2;
-                                            }
-                                        } else
-                                            value = 0;
-                                    }
-                                }
-                            }
-                            if (value > 3)
-                                return {false, TstTwist{false, y - 2, x + 1, -1}, value};
-                        }
-                        return {false, TstTwist{false, y - 2, x + 1, -1}, value};
-                    }
-
-                    else if ((y0 >> x & 7) == 6 && (y1 >> x & 7) == 4 && x > 0) {
-                        auto value = 0;
-                        if (BitCount(y0) == map.width - 1) {
-                            //     qDebug()<<"r";
-                            value += 1;
-                            if (BitCount(y1) == map.width - 2) {
-                                value += 1;
-                                if ((y2 >> x & 7) == 6 && (y3 >> x & 7) == 0) {
-                                    value += 2;
-                                    if (BitCount(y2) == map.width - 1) {
-                                        value += 2;
-                                        if ((y3 >> x & 7) == 0) {
-                                            value += 1;
-                                            if ((y4 >> x & 7) == 1) {
-                                                value += 1;
-                                                return {true, TstTwist{false, y - 2, x - 1, -1}, value};
-                                            } else {
-                                                value -= 2;
-                                            }
-                                        } else
-                                            value = 0;
-                                    }
+                                        } else {
+                                            value -= 2;
+                                        }
+                                    } else
+                                        value = 0;
                                 }
                             }
                         }
-                        if (value > 3)
-                            return {false, TstTwist{false, y - 2, x + 1, -1}, value};
                     }
+                    if (value > 3)
+                        finding3 = false;
+                    evalResult.t3Value += value;
                 }
-            return {false, TstTwist{false, -1, -1, -1}, value1};
-        };
-
-        auto cutout_tslot = [](TetrisMap & map, TetrisNode & piece)->std::tuple<int, TetrisMap> {
-            auto clear = 0;
-            if (piece.rotateState == 2)
-            {
-                clear = piece.attach(map);
-            } else
-            {
-                clear = piece.attach(map);
             }
-            /*else
-            {
-            auto imperial = TetrisNode{piece.type, Pos{piece.pos.x, piece.pos.y}, (piece.rotateState == 1 ? 3 : 1)};
-            }*/
-            return {clear, map};
-        };
-
-        auto value = 0;
-        auto ts = 1;
-        auto map1 = map;
-        int tsShapes[] = {5, 100, 100, 500};
-
-        for (auto i = 0; i <  ts; i++) {
-            auto [is, x, y, t2score] = sky_tslot(map1);
-            auto [isTst, twist, t3score] = tst_twist1(map1);
-            evalResult.t2Value += t2score;
-            evalResult.t3Value += t3score;
-            /*if (evalResult.t3Value > 4) {
-                qDebug() << evalResult.t2Value << evalResult.t3Value;
-                Tool::printMap(map1);
-            }*/
-            if (is) {
-                //qDebug()<<"youle t2";
-                auto node = TetrisNode{Piece::T, Pos{y, x}, 2};
-                auto [clear, mapAfter] = cutout_tslot(map1, node);
-                map1 = mapAfter;
-                value += tsShapes[clear];
-            } else if (isTst) {
-                auto node = TetrisNode{Piece::T, Pos{twist.y, twist.x}, (twist.point_left ? 3 : 1)};
-                auto [clear, mapAfter] = cutout_tslot(map1, node);
-                map1 = mapAfter;
-                value += tsShapes[clear];
-                //   qDebug() << "youle" << clear;
-            } else
-                break;
         }
-
-        return value;
+        return 0;
     };
 
     evalResult.value = eval_map() +  tspinDetect();
@@ -740,20 +604,19 @@ TetrisBot::Status TetrisBot::get(const TetrisBot::EvalResult &evalResult, Tetris
     default: break;
     }
 
-
     double rate = 1. / (depth) + 3;
     result.maxCombo = std::max(result.combo, result.maxCombo);
     result.maxAttack = std::max(result.attack, result.maxAttack);
     result.value += ((
+                             0.
                              + result.maxAttack * 40
                              + result.attack * 256  * rate
                              + (evalResult.t2Value) * (t_expect() < 8 ? 512 : 320) * 1.5
                              + (evalResult.safe >= 12 ? evalResult.t3Value * (t_expect() < 4 ? 10 : 8) * (result.b2b ? 512 : 256) / (6 + result.underAttack) : 0)
                              + (result.b2b ? 512 : 0)
                              + result.like * 64
-                             + 0.
                      ) * std::max<double>(0.05, (full_count_ - evalResult.count - result.mapRise * 10) / double(full_count_))
-                     + result.maxCombo * (result.maxCombo) * 40);
+                     + result.maxCombo * (result.maxCombo - 1) * 40);
     return result;
 }
 

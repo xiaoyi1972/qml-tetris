@@ -14,7 +14,7 @@
 #include<chrono>
 #include<limits>
 #include <QtConcurrent>
-class Task: public QThread
+class Task: public QObject
 {
     Q_OBJECT
 public slots:
@@ -22,6 +22,8 @@ public slots:
     int setInterval(const std::function<void()> &, int delay);
     void clearTimeout(int &);
     void clearInterval(int &);
+    void killTimer_(int );
+    int startTimer_(int );
     void timerEvent(QTimerEvent *);
 
 public:
@@ -78,8 +80,8 @@ public:
     Q_INVOKABLE void replay(const QString &str = ""); //重播
     void replayFunc();
     int timeRecord();//录像操作时间点
-    void toFresh(QVector<Pos> &, QVector<int> &);
-    QVector<Oper> Tetris::caculateBot(TetrisNode &, int); //bot计算
+    void toFresh(Piece &, QVector<Pos> &, QVector<int> &);
+    QVector<Oper> caculateBot(TetrisNode &, int); //bot计算
     void botCall();//bot调用执行操作
     void ExampleMap();//使用地图;
 
@@ -88,6 +90,19 @@ public:
         QEventLoop eventloop;
         QTimer::singleShot(msec, Qt::PreciseTimer, &eventloop, SLOT(quit()));
         eventloop.exec();
+    }
+
+    void Tetris::replayFunc1()
+    {
+        if (!recordPath.isEnd()) {
+            auto [time, oper] = recordPath.play();
+            opers(oper);
+            handle = task.setTimeOut(std::bind(&Tetris::replayFunc1, this), time);
+        } else {
+            task.clearTimeout(handle);
+            if (tg)
+                botHandle = task.setTimeOut(std::bind(&Tetris::botCall, this), 0);
+        }
     }
 
     Q_INVOKABLE void passPiece(bool newPiece = false);
@@ -99,8 +114,27 @@ public:
     Task task;
     keyConfig keyconfig;
     int handle, botHandle = -1;
-    int digRows=10;
-    bool digMod=false;
+    int digRows = 10;
+    bool digMod = false;
+    bool deaded = false;
+    QFutureWatcher<QVector<Oper>> watcher;
+    QThread thread;
+public slots:
+    void testPath()
+    {
+        auto path  = watcher.result();
+        auto interval = 0;
+        for (auto i = 0; i < path.size(); i++) {
+            recordPath.add(path[i],  interval); //interval
+            if ((i + 1 < path.size()) &&  path[i + 1] == Oper::SoftDrop) {
+                interval = 6;
+            } else if (path[i] != Oper::HardDrop) {
+                interval = 30;
+            } else
+                interval = 0;
+        }
+        replayFunc1();
+    }
 private:
     bool tg = false;
     Random rand;
@@ -108,7 +142,7 @@ private:
     TetrisNode tn{rand.getOne()};
     TetrisMap map{10, 20};
     Hold holdSys{&rand};
-    Recorder record{rand.seed};
+    Recorder record{rand.seed}, recordPath{rand.seed};
     KeyState leftKey{this, std::bind(&Tetris::left, this)};
     KeyState rightKey{this, std::bind(&Tetris::right, this)};
     KeyState softDropKey{this, std::bind(&Tetris::softdrop, this), nullptr, true};

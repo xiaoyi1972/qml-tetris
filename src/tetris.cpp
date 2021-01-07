@@ -1,8 +1,23 @@
 ﻿#include "tetris.h"
 
-int Task::setTimeOut(const std::function<void()> &func, int delay)
+void Task::killTimer_(int timerId)
+{
+    killTimer(timerId);
+}
+
+int Task::startTimer_(int delay)
 {
     int timerId = startTimer(delay, Qt::PreciseTimer);
+    return timerId;
+}
+
+int Task::setTimeOut(const std::function<void()> &func, int delay)
+{
+    int timerId;
+    if (thread() != QThread::currentThread()) {
+        QMetaObject::invokeMethod(this, "startTimer_", Qt::BlockingQueuedConnection, Q_RETURN_ARG(int, timerId), Q_ARG(int, delay));
+    } else
+        timerId = startTimer(delay, Qt::PreciseTimer);
     m_timeoutHash.insert(timerId, func);
     return timerId;
 }
@@ -10,7 +25,10 @@ int Task::setTimeOut(const std::function<void()> &func, int delay)
 void Task::clearTimeout(int &timerId)
 {
     if (m_timeoutHash.contains(timerId)) {
-        killTimer(timerId);
+        if (thread() != QThread::currentThread()) {
+            QMetaObject::invokeMethod(this, "killTimer_", Qt::BlockingQueuedConnection, Q_ARG(int, timerId));
+        } else
+            killTimer(timerId);
         m_timeoutHash.remove(timerId);
         timerId = -1;
     }
@@ -18,7 +36,11 @@ void Task::clearTimeout(int &timerId)
 
 int Task::setInterval(const std::function<void()> &func, int delay)
 {
-    int timerId = startTimer(delay, Qt::PreciseTimer);
+    int timerId;
+    if (thread() != QThread::currentThread()) {
+        QMetaObject::invokeMethod(this, "startTimer_", Qt::BlockingQueuedConnection, Q_RETURN_ARG(int, timerId), Q_ARG(int, delay));
+    } else
+       timerId = startTimer(delay, Qt::PreciseTimer);
     m_intervalHash.insert(timerId, func);
     return timerId;
 }
@@ -26,7 +48,10 @@ int Task::setInterval(const std::function<void()> &func, int delay)
 void Task::clearInterval(int &timerId)
 {
     if (m_intervalHash.contains(timerId)) {
-        killTimer(timerId);
+        if (thread() != QThread::currentThread()) {
+            QMetaObject::invokeMethod(this, "killTimer_", Qt::BlockingQueuedConnection, Q_ARG(int, timerId));
+        } else
+            killTimer(timerId);
         m_intervalHash.remove(timerId);
         timerId = -1;
     }
@@ -48,15 +73,17 @@ void Task::timerEvent(QTimerEvent *event)
 
 Tetris::Tetris()
 {
+    connect(&watcher, SIGNAL(finished()),  this, SLOT(testPath()));
     TetrisNode::init();
-    task.start(QThread::Priority::TimeCriticalPriority);
+    task.moveToThread(&thread);
+    thread.start(QThread::Priority::TimeCriticalPriority);
     startTime = std::chrono::high_resolution_clock::now();
 }
 
 Tetris::~Tetris()
 {
-    task.terminate();
-    task.wait();
+    thread.terminate();
+    thread.wait();
     TetrisNode::distruct();
 }
 
@@ -65,29 +92,31 @@ void Tetris::keyPressEvent(QKeyEvent *event)
     if (event->isAutoRepeat())
         return;
     auto _key = event->key();
-    if (_key == keyconfig.harddropKey)
-        harddrop();
-    else if (_key == keyconfig.leftKey) {
-        leftKey.keyDown();
-        if (rightKey.press)
-            rightKey.switchStop();
-    } else if (_key == keyconfig.rightKey) {
-        rightKey.keyDown();
-        if (leftKey.press)
-            leftKey.switchStop();
-    } else if (_key == keyconfig.softDropKey)
-        softDropKey.keyDown();
-    else if (_key == keyconfig.cwKey)
-        cw();
-    else if (_key == keyconfig.ccwKey)
-        ccw();
-    else  if (_key == keyconfig.restartKey) {
+    if (!deaded) {
+        if (_key == keyconfig.harddropKey)
+            harddrop();
+        else if (_key == keyconfig.leftKey) {
+            leftKey.keyDown();
+            if (rightKey.press)
+                rightKey.switchStop();
+        } else if (_key == keyconfig.rightKey) {
+            rightKey.keyDown();
+            if (leftKey.press)
+                leftKey.switchStop();
+        } else if (_key == keyconfig.softDropKey)
+            softDropKey.keyDown();
+        else if (_key == keyconfig.cwKey)
+            cw();
+        else if (_key == keyconfig.ccwKey)
+            ccw();
+        else  if (_key == keyconfig.holdKey)
+            hold();
+    }
+    if (_key == keyconfig.restartKey) {
         task.clearInterval(handle);
         isReplay = false;
         restart();
-    } else  if (_key == keyconfig.holdKey)
-        hold();
-    else if (_key == keyconfig.replay) {
+    } else if (_key == keyconfig.replay) {
         replay();
     } else if (_key == Qt::Key_W) {
         tg = !tg;
@@ -99,6 +128,7 @@ void Tetris::keyPressEvent(QKeyEvent *event)
         QString originalText = clipboard->text();            //获取剪贴板上文本信息
         clipboard->setText(Recorder::writeStruct(record).toBase64());
     } else if (_key == Qt::Key_V) {
+        //  TetrisBot::search(tn, map);
         auto row = 0b1111111111;
         auto num = 0;
         num = int(qrand() % 10);
@@ -109,6 +139,12 @@ void Tetris::keyPressEvent(QKeyEvent *event)
         map.update();
         passMap();
         passPiece(true);
+    } else if (_key == Qt::Key_M) {
+        QTime startTime = QTime::currentTime();
+        auto x = TetrisBot::search(tn, map);
+        QTime stopTime = QTime::currentTime();
+        int elapsed = startTime.msecsTo(stopTime);
+        qDebug() << "QTime.currentTime =" << elapsed << "ms" << x.size();
     }
 }
 
@@ -138,18 +174,20 @@ void Tetris::hold()
 {
     auto res = holdSys.exchange(tn);
     if (res > 0) {
+        if (!isReplay)
+            record.add(Oper::Hold, timeRecord());
         passHold();
     }
     if (res == 2)
         passNext();
-    if (!isReplay)
-        record.add(Oper::Hold, timeRecord());
+
     passPiece(true);
 }
 
 void Tetris::restart()
 {
     startTime = std::chrono::high_resolution_clock::now();
+    deaded = false;
     if (!isReplay) {
         rand = Random{};
         record = Recorder{rand.seed};
@@ -188,26 +226,30 @@ void Tetris::restart()
 
 void Tetris::left()
 {
-    if (!isReplay)
-        record.add(Oper::Left, timeRecord());
-    if (TetrisNode::shift(tn, map, -1, 0))
+    if (TetrisNode::shift(tn, map, -1, 0)) {
+        if (!isReplay)
+            record.add(Oper::Left, timeRecord());
         passPiece();
+    }
 }
 
 void Tetris::right()
 {
-    if (!isReplay)
-        record.add(Oper::Right, timeRecord());
-    if (TetrisNode::shift(tn, map, 1, 0))
+
+    if (TetrisNode::shift(tn, map, 1, 0)) {
+        if (!isReplay)
+            record.add(Oper::Right, timeRecord());
         passPiece();
+    }
 }
 
 void Tetris::softdrop()
 {
-    if (!isReplay)
-        record.add(Oper::SoftDrop, timeRecord());
-    if (TetrisNode::shift(tn, map, 0, 1))
+    if (TetrisNode::shift(tn, map, 0, 1)) {
+        if (!isReplay)
+            record.add(Oper::SoftDrop, timeRecord());
         passPiece();
+    }
 }
 
 void Tetris::harddrop()
@@ -234,16 +276,16 @@ void Tetris::harddrop()
     else if (clear.size() > 0)
         gamedata.b2b = 0;
     if (clear.size() > 0) {
-        if (gamedata.comboState)
-            gamedata.combo++;
-        gamedata.comboState = true;
+        //   if (gamedata.comboState)
+        gamedata.combo++;
+        //   gamedata.comboState = true;
     } else {
-        gamedata.comboState = false;
+        //   gamedata.comboState = false;
         gamedata.combo = 0;
     }
- //  qDebug() << "b2b:" << !!gamedata.b2b << " combo:" << gamedata.combo;
+//  qDebug() << "b2b:" << !!gamedata.b2b << " combo:" << gamedata.combo;
+    auto pieceType = tn.type;
 
-    toFresh(pieceChanges, clear);
     auto piece = rand.getOne();
     passNext();
     tn = TetrisNode{piece, Pos(3, 0)};
@@ -275,23 +317,28 @@ void Tetris::harddrop()
             passMap();
         }
     }
+    if (!tn.check(map))
+        deaded = true;
     passPiece(true);
+    toFresh(pieceType, pieceChanges, clear);
 }
 
 void Tetris::ccw()
 {
-    if (!isReplay)
-        record.add(Oper::Ccw, timeRecord());
-    if (TetrisNode::rotate(tn, map, false))
+    if (TetrisNode::rotate(tn, map, false)) {
+        if (!isReplay)
+            record.add(Oper::Ccw, timeRecord());
         passPiece();
+    }
 }
 
 void Tetris::cw()
 {
-    if (!isReplay)
-        record.add(Oper::Cw, timeRecord());
-    if (TetrisNode::rotate(tn, map))
+    if (TetrisNode::rotate(tn, map)) {
+        if (!isReplay)
+            record.add(Oper::Cw, timeRecord());
         passPiece();
+    }
 }
 
 void Tetris::hello()
@@ -309,10 +356,11 @@ void Tetris::opers(Oper a)
     case Oper::Cw: cw(); break;
     case Oper::Ccw: ccw(); break;
     case Oper::Hold: hold(); break;
+    default: break;
     }
 }
 
-void Tetris::toFresh(QVector<Pos> &pieceChanges, QVector<int> &clear)
+void Tetris::toFresh(Piece &_type, QVector<Pos> &pieceChanges, QVector<int> &clear)
 {
     QVariantList list, next;
     for (int y = 0; y < map.height; y++)
@@ -326,7 +374,7 @@ void Tetris::toFresh(QVector<Pos> &pieceChanges, QVector<int> &clear)
         QVariantMap m;
         m.insert("y", y.x);
         m.insert("x", y.y);
-        m.insert("type", static_cast<int>(tn.type));
+        m.insert("type", static_cast<int>(_type));
         changes << m;
     }
     QVariantMap clearMsg;
@@ -338,6 +386,7 @@ void Tetris::toFresh(QVector<Pos> &pieceChanges, QVector<int> &clear)
     QVariantMap mapMsg;
     mapMsg.insert("changes", changes);
     mapMsg.insert("clear", clearMsg);
+    mapMsg.insert("dead", deaded);
     emit harddropFresh(mapMsg);
 };
 
@@ -354,6 +403,7 @@ void Tetris::passPiece(bool newPiece)
     active.insert("drop", row);
     mapMsg.insert("isNewSpawn", newPiece);
     mapMsg.insert("active", active);
+    mapMsg.insert("dead", deaded);
     emit whl(mapMsg);
 }
 
@@ -457,10 +507,10 @@ QVector<Oper> Tetris::caculateBot(TetrisNode &start, int limitTime)
     auto [best, ishold, test1] = ctx.getBest();
     QVector<Oper>path;
     if (!ishold)
-        path = TetrisBot::make_path(a, best, map);
+        path = TetrisBot::make_path(a, best, map, true);
     else {
         auto holdNode = TetrisNode{holdSys.type == Piece::None ? rand.displayBag[0] : holdSys.type};
-        path = TetrisBot::make_path(holdNode, best, map);
+        path = TetrisBot::make_path(holdNode, best, map, true);
         path.push_front(Oper::Hold);
     }
     return path;
@@ -469,28 +519,30 @@ QVector<Oper> Tetris::caculateBot(TetrisNode &start, int limitTime)
 void Tetris::botCall()
 {
     auto limitTime = 100;
-    QEventLoop eventloop;
-    QFutureWatcher<QVector<Oper>> watcher;
-    connect(&watcher, SIGNAL(finished()),  &eventloop, SLOT(quit()));
+    recordPath.clear();
+    // qDebug() << "zaiyunxing";
+    // QEventLoop eventloop;
+    //QFutureWatcher<QVector<Oper>> watcher;
+    //connect(&watcher, SIGNAL(finished()),  &eventloop, SLOT(quit()));
+
     QFuture<QVector<Oper>> future = QtConcurrent::run(this, &Tetris::caculateBot, tn, limitTime);
     watcher.setFuture(future);
-    eventloop.exec();
-    auto path  = future.result();
+    // eventloop.exec();
+    /*auto path  = future.result();
+    auto interval = 0;
     for (auto i = 0; i < path.size(); i++) {
-        if (path[i] == Oper::DropToBottom) {
-            auto softdrops = tn.getDrop(map);
-            path.remove(i);
-            path.insert(i, softdrops, Oper::SoftDrop);
-        }
-        opers(path[i]);
+        recordPath.add(path[i],  interval); //interval
         if ((i + 1 < path.size()) &&  path[i + 1] == Oper::SoftDrop) {
-            sleepTo(6);
-        } else if (path[i] != Oper::HardDrop)
-            sleepTo(30);
+            interval = 6;
+        } else if (path[i] != Oper::HardDrop) {
+            interval = 30;
+        } else
+            interval = 0;
     }
-    //tg = false;
-    if (tg)
-        botHandle = task.setTimeOut(std::bind(&Tetris::botCall, this), 0);
+    replayFunc1();*/
+//   tg = false;
+    /* if (tg)
+         botHandle = task.setTimeOut(std::bind(&Tetris::botCall, this), 0);*/
 }
 
 void Tetris::ExampleMap()
@@ -523,18 +575,21 @@ void Tetris::ExampleMap()
     //tsd
     // map.data[map.height - 7] = 0b0000000000;
     // map.data[map.height - 6] = 0b0100000000;
-    map.data[map.height - 5] = 0b0000000000;
-    map.data[map.height - 4] = 0b0000000000;
-    map.data[map.height - 3] = 0b0000111111;
-    map.data[map.height - 2] = 0b0001111111;
-    map.data[map.height - 1] = 0b0101111111;
+    /* map.data[map.height - 5] = 0b0000000000;
+     map.data[map.height - 4] = 0b0000000000;
+     map.data[map.height - 3] = 0b0000111111;
+     map.data[map.height - 2] = 0b0001111111;
+     map.data[map.height - 1] = 0b0101111111;*/
 
+    map.data[map.height - 3] = 0b1000000000;
+    map.data[map.height - 2] = 0b1111110000;
+    map.data[map.height - 1] = 0b1111110111;
     reverseMap();
     //qDebug() << 0b1111110101;
 
-    for (auto i = 1; i < 16; i++) {
-        map.data[map.height - i] = 0b1111111111;
-    }
+    /* for (auto i = 1; i < 16; i++) {
+         map.data[map.height - i] = 0b1110000111;
+     }*/
 
     for (auto i = 0; i < map.height; i++)
         for (auto j = 0; j < map.width; j++) {

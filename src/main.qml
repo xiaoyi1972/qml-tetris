@@ -2,6 +2,7 @@
 import QtQuick.Controls 2.15
 import QtQuick.Window 2.15
 import QtQuick.Shapes 1.15
+import QtGraphicalEffects 1.15
 import Tetris 1.0
 import "tetrisgame.js" as TetrisGame
 import "controlKey.js" as ControlKey
@@ -37,9 +38,6 @@ Window {
         width: TetrisGame.blockSize * TetrisGame.maxColumn
         height: TetrisGame.blockSize * (TetrisGame.maxRow + TetrisGame.RowOver)
         anchors.centerIn: parent
-        SystemPalette {
-            id: activePalette
-        }
 
         Shape {
             id: displayBorder
@@ -67,80 +65,120 @@ Window {
             }
         }
 
+        ShaderEffect {
+                        id: feildLayer
+                        anchors.fill: parent
+                        visible:true
+                        property variant src: background
+                        property double range: 1
+                        property double unVisible:(TetrisGame.RowOver)/ (TetrisGame.maxRow + TetrisGame.RowOver)
+                        NumberAnimation {
+                            id: animationDead
+                            target: feildLayer
+                            property: "range"
+                            from: 1
+                            to: 0
+                            //  loops: Animation.Infinite
+                            duration: 1000
+                        }
+                        function playDead() {
+                            animationDead.start()
+                        }
+                        vertexShader: "
+        uniform highp mat4 qt_Matrix;
+        attribute highp vec4 qt_Vertex;
+        attribute highp vec2 qt_MultiTexCoord0;
+        varying highp vec2 coord;
+        void main() {
+        coord = qt_MultiTexCoord0;
+        gl_Position = qt_Matrix * qt_Vertex;
+        }"
+                        fragmentShader: "
+        varying highp vec2 coord;
+        uniform sampler2D src;
+        uniform float range;
+        uniform float unVisible;
+        uniform lowp float qt_Opacity;
+        void main() {
+        lowp vec4 tex = texture2D(src, coord);
+        float test= step(coord.y,range);
+        tex.rgb=mix(vec3(0.6,0.6,0.6),tex.rgb,test);
+        tex.a=tex.a*step(unVisible,coord.y);
+        gl_FragColor =vec4(tex.rgb,tex.a);
+        }"
+                    }
+
         Item {
             id: background
             anchors.fill: parent
-            Item {
-                id: fk
-                property int minoType: -1
-                property var board: []
-                property int rs: 0
-                property int xyDuration: 30
-                property int rDuration: 60
-                x: 0
-                y: 0
-                z: 3
-                transformOrigin: Item.Center
-                rotation: 0
-                Behavior on x {
-                    id: xb
-                    SmoothedAnimation {
-                      duration: fk.xyDuration
-                    }
+            layer.enabled: true
+            visible: false
+        }
+
+        Item {
+            id: fk
+            property int minoType: -1
+            property var board: []
+            property int rs: 0
+            property int xyDuration: 50
+            property int rDuration: 60
+            x: 0
+            y: 0
+            //  z: -1
+            transformOrigin: Item.Center
+            rotation: 0
+            Behavior on x {
+                id: xb
+                SmoothedAnimation {
+                    duration: fk.xyDuration/Math.ceil(Math.abs(xb.targetValue-fk.x)/19+.1)
                 }
-                Behavior on y {
-                    id: yb
-                    SmoothedAnimation {
-                       duration: fk.xyDuration
-                    }
+            }
+            Behavior on y {
+                id: yb
+                SmoothedAnimation {
+                    duration: fk.xyDuration/Math.ceil(Math.abs(yb.targetValue-fk.y)/19+.1)
                 }
-                Behavior on rotation {
-                    id: rsb
-                    RotationAnimation {
-                        duration: fk.rDuration
-                        direction: RotationAnimator.Shortest
-                    }
+            }
+            Behavior on rotation {
+                id: rsb
+                RotationAnimation {
+                    duration: fk.rDuration
+                    direction: RotationAnimator.Shortest
                 }
-                function toggleBehavior(is) {
-                    xb.enabled = is
-                    yb.enabled = is
-                    rsb.enabled = is
+            }
+            function toggleBehavior(is) {
+                xb.enabled = is
+                yb.enabled = is
+                rsb.enabled = is
+            }
+        }
+
+        Item {
+            id: shadow
+            property int minoType: -1
+            property var board: []
+            property int xyDuration: 50
+            x: 0
+            y: 0
+            // z: -1
+            transformOrigin: Item.Center
+            rotation: 0
+            Behavior on x {
+                id: xb1
+                SmoothedAnimation {
+                    duration: shadow.xyDuration/Math.ceil(Math.abs(xb1.targetValue-shadow.x)/19+.1)
+                }
+            }
+            Behavior on y {
+                id: yb1
+                SmoothedAnimation {
+                    duration: shadow.xyDuration/Math.ceil(Math.abs(yb1.targetValue-shadow.y)/19+.1)
                 }
             }
 
-            Item {
-                id: shadow
-                property int minoType: -1
-                property var board: []
-                property int xyDuration: 30
-                x: 0
-                y: 0
-                z: 1
-                transformOrigin: Item.Center
-                rotation: 0
-                Behavior on x {
-                    id: xb1
-                    SmoothedAnimation {
-                        duration: shadow.xyDuration
-                    }
-                }
-                Behavior on y {
-                    id: yb1
-                    SmoothedAnimation {
-                        duration: shadow.xyDuration
-                    }
-                }
-
-
-                /* Behavior on rotation {
-                     id:rsb1
-                     NumberAnimation { properties:"rotation"; duration: 30;easing.type:Easing.OutInQuad }
-                     }*/
-                function toggleBehavior(is) {
-                    xb1.enabled = is
-                    yb1.enabled = is
-                    /*  rsb1.enabled=is;*/
-                }
+            function toggleBehavior(is) {
+                xb1.enabled = is
+                yb1.enabled = is
             }
         }
 
@@ -154,8 +192,8 @@ Window {
                 id: nexts
                 font.pointSize: 16
                 text: "预览"
-             //   anchors.top: screen.top
-             //   anchors.left: screen.right
+                //   anchors.top: screen.top
+                //   anchors.left: screen.right
             }
             Column {
                 id: nextsC
@@ -181,7 +219,7 @@ Window {
             }
             Mino {
                 id: hold
-             //   anchors.right: screen.left
+                //   anchors.right: screen.left
             }
         }
 

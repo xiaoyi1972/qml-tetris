@@ -5,7 +5,6 @@ Rectangle {
     property bool dying: false
     property bool spawned: false
     opacity: 0
-    color: "transparent"
 
     Behavior on y {
         id: that
@@ -16,9 +15,8 @@ Rectangle {
     }
 
     Behavior on opacity {
-        id:opacityAni
-        NumberAnimation {
-            properties: "opacity"
+        id: opacityAni
+        OpacityAnimator {
             duration: 100
         }
     }
@@ -27,10 +25,11 @@ Rectangle {
         State {
             name: "AliveState"
             when: spawned == true && dying == false
-            PropertyChanges {
+             PropertyChanges {
                 target: root
                 opacity: 1
             }
+
         },
 
         State {
@@ -46,10 +45,21 @@ Rectangle {
         }
     ]
 
+    NumberAnimation {
+        target: root
+        properties: "opacity"
+        from: 0
+        to: 1
+        duration: 100
+        easing.type: Easing.InOutBack
+        loops: Animation.Infinite
+        // running:true
+    }
+
     function banAimate(is) {
         that.enabled = is
     }
-    function banFlash(is){
-       opacityAni.enabled=is
+    function banFlash(is) {
+        opacityAni.enabled = is
     }
 }
