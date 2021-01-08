@@ -30,6 +30,7 @@ public:
     Task() = default;
     QHash<int, std::function<void()>> m_intervalHash;
     QHash<int, std::function<void()>> m_timeoutHash;
+    QHash<QTimer *,std::function<void()>> timers;
 };
 
 class Tetris: public QQuickItem
@@ -127,7 +128,7 @@ public slots:
         for (auto i = 0; i < path.size(); i++) {
             recordPath.add(path[i],  interval); //interval
             if ((i + 1 < path.size()) &&  path[i + 1] == Oper::SoftDrop) {
-                interval = 6;
+                interval = 16;
             } else if (path[i] != Oper::HardDrop) {
                 interval = 30;
             } else

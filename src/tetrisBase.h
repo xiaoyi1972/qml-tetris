@@ -9,6 +9,7 @@
 #include <QSet>
 #include<QDataStream>
 #include <QBuffer>
+#include <QRandomGenerator>
 
 enum class Piece {Trash = -2, None = -1, O, I, T, L, J, S, Z};
 enum class Oper {None = -1, Left, Right, SoftDrop, HardDrop, Hold, Cw, Ccw, DropToBottom};
@@ -442,17 +443,19 @@ class Random
 public:
     Random(int _seed = QTime(0, 0, 0).msecsTo(QTime::currentTime()))
     {
-        seed = _seed;
-        qsrand(seed);        //设置随机数种子
+       seed = _seed;
+       rand.seed(seed);
+       // qsrand(seed);        //设置随机数种子
     }
 
     void getBag()
     {
-        // bag.fill(Piece::T, 7);
+        //bag.fill(Piece::T, 7);
         //bag=QVector<Piece>{Piece::J,Piece::Z,Piece::S,Piece::J,Piece::Z,Piece::T,Piece::I};
         //return;
         do {
-            auto num = static_cast<Piece>(qrand() % 7);
+          //  auto num = static_cast<Piece>(qrand() % 7);
+            auto num = static_cast<Piece>(rand.generate() % 7);
             if (bag.contains(num)) {
                 continue;
             } else {
@@ -479,6 +482,7 @@ public:
 
     QVector<Piece> bag, displayBag;
     int seed;
+    QRandomGenerator rand;
 };
 
 class Hold
@@ -598,7 +602,7 @@ public:
     std::tuple<int, Oper>play()
     {
         auto playIndex_ = playIndex++;
-        return{time[playIndex_], oper[playIndex_]};
+        return{playIndex >= time.size() ? 0 : time[playIndex], oper[playIndex_]};
     }
 
     void reset()

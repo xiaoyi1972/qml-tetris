@@ -83,6 +83,40 @@ QString Tool:: printPath(QVector<Oper> &path)
     return a;
 }
 
+QString Tool:: printOper(Oper & x){
+    QString a = "a";
+    switch (x) {
+    case Oper::None:
+        a = "None";
+        break;
+    case Oper::Left:
+        a = "Left";
+        break;
+    case Oper::Right:
+        a = "Right";
+        break;
+    case Oper::SoftDrop:
+        a = "SoftDrop";
+        break;
+    case Oper::HardDrop:
+        a = "HardDrop";
+        break;
+    case Oper::Hold:
+        a = "Hold";
+        break;
+    case Oper::Cw:
+        a = "Cw";
+        break;
+    case Oper::Ccw:
+        a = "Ccw";
+        break;
+    case Oper::DropToBottom:
+        a = "DropToBottom";
+        break;
+    }
+    return a;
+}
+
 void Tool::printMap(TetrisMap &map)
 {
 
@@ -201,7 +235,6 @@ QVector<TetrisNode> TetrisBot::search(TetrisNode &_first, TetrisMap &_map)
 
 auto TetrisBot::make_path(TetrisNode &start_node, TetrisNode &land_point, TetrisMap &map, bool NoSoftToBottom = false)->QVector<Oper>
 {
-    //qDebug() << "path:" << Tool::printNode(start_node)<<Tool::printNode(land_point);
     QVector<TetrisNode> node_search;
     QHash<TetrisNode, std::tuple<TetrisNode, Oper>>node_mark;
     auto &land_node = land_point;
@@ -224,9 +257,6 @@ auto TetrisBot::make_path(TetrisNode &start_node, TetrisNode &land_point, Tetris
             auto next = std::get<0>(result);
             auto dropToSd = (path.size() > 0 && std::get<1>(result) == Oper::DropToBottom);
             auto softDropDis = node.pos.y - next.pos.y;
-            /* if(std::get<1>(result)==Oper::DropToBottom){
-                 qDebug()<<Tool::printNode(next)<<Tool::printNode(node)<<(node.pos.y-next.pos.y)<<path.size();
-             }*/
             node = next;
             if (node.type == Piece::None) {
                 break;

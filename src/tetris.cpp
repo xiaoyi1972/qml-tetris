@@ -16,8 +16,9 @@ int Task::setTimeOut(const std::function<void()> &func, int delay)
     int timerId;
     if (thread() != QThread::currentThread()) {
         QMetaObject::invokeMethod(this, "startTimer_", Qt::BlockingQueuedConnection, Q_RETURN_ARG(int, timerId), Q_ARG(int, delay));
-    } else
+    } else {
         timerId = startTimer(delay, Qt::PreciseTimer);
+    }
     m_timeoutHash.insert(timerId, func);
     return timerId;
 }
@@ -27,8 +28,9 @@ void Task::clearTimeout(int &timerId)
     if (m_timeoutHash.contains(timerId)) {
         if (thread() != QThread::currentThread()) {
             QMetaObject::invokeMethod(this, "killTimer_", Qt::BlockingQueuedConnection, Q_ARG(int, timerId));
-        } else
+        } else {
             killTimer(timerId);
+        }
         m_timeoutHash.remove(timerId);
         timerId = -1;
     }
@@ -37,10 +39,12 @@ void Task::clearTimeout(int &timerId)
 int Task::setInterval(const std::function<void()> &func, int delay)
 {
     int timerId;
+    // qDebug()<<"setInterval";
     if (thread() != QThread::currentThread()) {
         QMetaObject::invokeMethod(this, "startTimer_", Qt::BlockingQueuedConnection, Q_RETURN_ARG(int, timerId), Q_ARG(int, delay));
-    } else
-       timerId = startTimer(delay, Qt::PreciseTimer);
+    } else {
+        timerId = startTimer(delay, Qt::PreciseTimer);
+    }
     m_intervalHash.insert(timerId, func);
     return timerId;
 }
@@ -50,8 +54,9 @@ void Task::clearInterval(int &timerId)
     if (m_intervalHash.contains(timerId)) {
         if (thread() != QThread::currentThread()) {
             QMetaObject::invokeMethod(this, "killTimer_", Qt::BlockingQueuedConnection, Q_ARG(int, timerId));
-        } else
+        } else {
             killTimer(timerId);
+        }
         m_intervalHash.remove(timerId);
         timerId = -1;
     }
@@ -256,6 +261,7 @@ void Tetris::harddrop()
 {
     if (!isReplay)
         record.add(Oper::HardDrop, timeRecord());
+  //  qDebug()<<Tool::printType(tn.type);
     mutex.lock();
     holdSys.reset();
     tn.pos.y += tn.getDrop(map);
@@ -344,6 +350,7 @@ void Tetris::cw()
 void Tetris::hello()
 {
     qDebug() << "hello";
+    task.setTimeOut(std::bind(&Tetris::hello, this), 100);
 }
 
 void Tetris::opers(Oper a)
@@ -420,7 +427,6 @@ void Tetris::passNext(bool ifForce)
 {
     QVariantList nexts;
     for (auto piece : rand.displayBag) {
-//    qDebug() << Tool::printType(piece);
         nexts << static_cast<int>(piece);
     }
     QVariantMap map;
@@ -459,24 +465,24 @@ void Tetris::setKeyboard(QVariantMap a)
 void Tetris::replay(const QString &str)
 {
     task.clearInterval(handle);
-
     if (str != "")
         record = Recorder::readStruct(QByteArray::fromBase64(str.toLatin1()));
-    qDebug() << record.seed;
+    qDebug() << "seed" << record.seed;
     qDebug() << record.time;
     isReplay = true;
     restart();
     record.reset();
+    // replayFunc();
     handle = task.setTimeOut(std::bind(&Tetris::replayFunc, this),  record.firstTime);
 }
 
 void Tetris::replayFunc()
 {
-    if (!record.isEnd()) {
-        auto [time, oper] = record.play();
-        opers(oper);
+    auto [time, oper] = record.play();
+    opers(oper);
+    if (!record.isEnd())
         handle = task.setTimeOut(std::bind(&Tetris::replayFunc, this), time);
-    } else {
+    else {
         task.clearTimeout(handle);
         isReplay = false;
     }
@@ -520,29 +526,8 @@ void Tetris::botCall()
 {
     auto limitTime = 100;
     recordPath.clear();
-    // qDebug() << "zaiyunxing";
-    // QEventLoop eventloop;
-    //QFutureWatcher<QVector<Oper>> watcher;
-    //connect(&watcher, SIGNAL(finished()),  &eventloop, SLOT(quit()));
-
     QFuture<QVector<Oper>> future = QtConcurrent::run(this, &Tetris::caculateBot, tn, limitTime);
     watcher.setFuture(future);
-    // eventloop.exec();
-    /*auto path  = future.result();
-    auto interval = 0;
-    for (auto i = 0; i < path.size(); i++) {
-        recordPath.add(path[i],  interval); //interval
-        if ((i + 1 < path.size()) &&  path[i + 1] == Oper::SoftDrop) {
-            interval = 6;
-        } else if (path[i] != Oper::HardDrop) {
-            interval = 30;
-        } else
-            interval = 0;
-    }
-    replayFunc1();*/
-//   tg = false;
-    /* if (tg)
-         botHandle = task.setTimeOut(std::bind(&Tetris::botCall, this), 0);*/
 }
 
 void Tetris::ExampleMap()

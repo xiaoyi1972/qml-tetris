@@ -15,6 +15,7 @@ QString  printType(Piece);
 void printMap(TetrisMap &);
 QString printNode(TetrisNode &);
 QString printPath(QVector<Oper> &);
+QString printOper(Oper &);
 void sleepTo(int msec);
 }
 
