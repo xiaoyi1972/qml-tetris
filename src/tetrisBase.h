@@ -602,7 +602,7 @@ public:
     std::tuple<int, Oper>play()
     {
         auto playIndex_ = playIndex++;
-        return{playIndex >= time.size() ? 0 : time[playIndex], oper[playIndex_]};
+        return{playIndex >= time.size() ? 0 : time[playIndex], playIndex_>=oper.size()?Oper::None:oper[playIndex_]};
     }
 
     void reset()

@@ -4,26 +4,23 @@ import QtQml 2.2
 import QtQuick.Layouts 1.3
 
 Item {
-    id: set_scene
+    id: root
     property var controlkey: null
+    property var tetris: null
     visible: false
     focus: false
-    anchors.fill: screen
     z: 98
 
     Rectangle {
-        width: screen.width
-        height: screen.height
+        anchors.fill: root
         color: Qt.rgba(0, 0, 0, 0.5)
     }
 
     ScrollView {
         id: scrollview1
-        //contentItem:set_scene
-        width: screen.width
-        height: screen.height
+        anchors.fill: root
+        //ScrollBar.vertical.policy: ScrollBar.AlwaysOn
         clip: true
-
 
         /*
          style:ScrollViewStyle{
@@ -82,14 +79,14 @@ Item {
                     }
                     TextField {
                         height: 25
-                        text: set_scene.controlkey.config.das_delay
+                        text: root.controlkey.config.das_delay
                         validator: IntValidator {
                             bottom: 0
                         }
                         width: 50
                         anchors.verticalCenter: parent.verticalCenter
                         onEditingFinished: {
-                            set_scene.controlkey.config.das_delay = text
+                            root.controlkey.config.das_delay = text
                         }
                     }
                 }
@@ -104,14 +101,14 @@ Item {
                     }
                     TextField {
                         height: 25
-                        text: set_scene.controlkey.config.das_repeat
+                        text: root.controlkey.config.das_repeat
                         validator: IntValidator {
                             bottom: 0
                         }
                         width: 50
                         anchors.verticalCenter: parent.verticalCenter
                         onEditingFinished: {
-                            set_scene.controlkey.config.das_repeat = text
+                            root.controlkey.config.das_repeat = text
                         }
                     }
                 }
@@ -126,14 +123,14 @@ Item {
                     }
                     TextField {
                         height: 25
-                        text: set_scene.controlkey.config.softDropSpeed
+                        text: root.controlkey.config.softDropSpeed
                         validator: IntValidator {
                             bottom: 0
                         }
                         width: 50
                         anchors.verticalCenter: parent.verticalCenter
                         onEditingFinished: {
-                            set_scene.controlkey.config.softDropSpeed = text
+                            root.controlkey.config.softDropSpeed = text
                         }
                     }
                 }
@@ -148,12 +145,12 @@ Item {
          text:"锁定延迟:"
      }
      TextField{height:25
-         text:set_scene.controlkey.config.lock_delay
+         text:root.controlkey.config.lock_delay
          inputMethodHints:Qt.ImhDigitsOnly
          width:50
          anchors.verticalCenter: parent.verticalCenter
          onEditingFinished:{
-         set_scene.controlkey.config.lock_delay=text
+         root.controlkey.config.lock_delay=text
          }
      }
      }*/
@@ -168,12 +165,12 @@ Item {
          text:"软降速度:"
      }
      TextField{height:25
-         text:set_scene.controlkey.config.softDropSpeed
+         text:root.controlkey.config.softDropSpeed
          inputMethodHints:Qt.ImhDigitsOnly
          width:50
          anchors.verticalCenter: parent.verticalCenter
          onEditingFinished:{
-         set_scene.controlkey.config.softDropSpeed=text
+         root.controlkey.config.softDropSpeed=text
          }
      }
      }
@@ -181,7 +178,7 @@ Item {
      Row{
      spacing:5
      CheckBox{
-         checked:set_scene.controlkey.config.shadow
+         checked:root.controlkey.config.shadow
          Text{text:"阴影"
               font.family:"Loma"
               font.pixelSize: 20
@@ -190,7 +187,7 @@ Item {
               anchors.verticalCenter: parent.verticalCenter
      }
          onClicked:{
-             set_scene.controlkey.config.shadow=checked
+             root.controlkey.config.shadow=checked
          }
      }
      }*/
@@ -217,16 +214,16 @@ Item {
                     }
                     TextField {
                         height: 25
-                        text: set_scene.controlkey.retKey(
-                                  set_scene.controlkey.config.left_move)
+                        text: root.controlkey.retKey(
+                                  root.controlkey.config.left_move)
                         width: 50
                         anchors.verticalCenter: parent.verticalCenter
                         readOnly: true
                         Keys.onPressed: {
-                            set_scene.controlkey.config.left_move = ""
-                            if (!set_scene.controlkey.isConflict(event.key)) {
-                                text = set_scene.controlkey.retKey(event.key)
-                                set_scene.controlkey.config.left_move = event.key
+                            root.controlkey.config.left_move = ""
+                            if (!root.controlkey.isConflict(event.key)) {
+                                text = root.controlkey.retKey(event.key)
+                                root.controlkey.config.left_move = event.key
                             }
                             event.accepted = true
                         }
@@ -244,16 +241,16 @@ Item {
                     TextField {
                         height: 25
                         focus: true
-                        text: set_scene.controlkey.retKey(
-                                  set_scene.controlkey.config.right_move)
+                        text: root.controlkey.retKey(
+                                  root.controlkey.config.right_move)
                         width: 50
                         anchors.verticalCenter: parent.verticalCenter
                         readOnly: true
                         Keys.onPressed: {
-                            set_scene.controlkey.config.right_move = ""
-                            if (!set_scene.controlkey.isConflict(event.key)) {
-                                text = set_scene.controlkey.retKey(event.key)
-                                set_scene.controlkey.config.right_move = event.key
+                            root.controlkey.config.right_move = ""
+                            if (!root.controlkey.isConflict(event.key)) {
+                                text = root.controlkey.retKey(event.key)
+                                root.controlkey.config.right_move = event.key
                             }
                             event.accepted = true
                         }
@@ -270,16 +267,16 @@ Item {
                     }
                     TextField {
                         height: 25
-                        text: set_scene.controlkey.retKey(
-                                  set_scene.controlkey.config.soft_drop)
+                        text: root.controlkey.retKey(
+                                  root.controlkey.config.soft_drop)
                         width: 50
                         anchors.verticalCenter: parent.verticalCenter
                         readOnly: true
                         Keys.onPressed: {
-                            set_scene.controlkey.config.soft_drop = ""
-                            if (!set_scene.controlkey.isConflict(event.key)) {
-                                text = set_scene.controlkey.retKey(event.key)
-                                set_scene.controlkey.config.soft_drop = event.key
+                            root.controlkey.config.soft_drop = ""
+                            if (!root.controlkey.isConflict(event.key)) {
+                                text = root.controlkey.retKey(event.key)
+                                root.controlkey.config.soft_drop = event.key
                             }
                             event.accepted = true
                         }
@@ -296,16 +293,16 @@ Item {
                     }
                     TextField {
                         height: 25
-                        text: set_scene.controlkey.retKey(
-                                  set_scene.controlkey.config.hard_drop)
+                        text: root.controlkey.retKey(
+                                  root.controlkey.config.hard_drop)
                         width: 50
                         anchors.verticalCenter: parent.verticalCenter
                         readOnly: true
                         Keys.onPressed: {
-                            set_scene.controlkey.config.hard_drop = ""
-                            if (!set_scene.controlkey.isConflict(event.key)) {
-                                text = set_scene.controlkey.retKey(event.key)
-                                set_scene.controlkey.config.hard_drop = event.key
+                            root.controlkey.config.hard_drop = ""
+                            if (!root.controlkey.isConflict(event.key)) {
+                                text = root.controlkey.retKey(event.key)
+                                root.controlkey.config.hard_drop = event.key
                             }
                             event.accepted = true
                         }
@@ -322,16 +319,16 @@ Item {
                     }
                     TextField {
                         height: 25
-                        text: set_scene.controlkey.retKey(
-                                  set_scene.controlkey.config.rotate_normal)
+                        text: root.controlkey.retKey(
+                                  root.controlkey.config.rotate_normal)
                         width: 50
                         anchors.verticalCenter: parent.verticalCenter
                         readOnly: true
                         Keys.onPressed: {
-                            set_scene.controlkey.config.rotate_normal = ""
-                            if (!set_scene.controlkey.isConflict(event.key)) {
-                                text = set_scene.controlkey.retKey(event.key)
-                                set_scene.controlkey.config.rotate_normal = event.key
+                            root.controlkey.config.rotate_normal = ""
+                            if (!root.controlkey.isConflict(event.key)) {
+                                text = root.controlkey.retKey(event.key)
+                                root.controlkey.config.rotate_normal = event.key
                             }
                             event.accepted = true
                         }
@@ -348,16 +345,16 @@ Item {
                     }
                     TextField {
                         height: 25
-                        text: set_scene.controlkey.retKey(
-                                  set_scene.controlkey.config.rotate_reverse)
+                        text: root.controlkey.retKey(
+                                  root.controlkey.config.rotate_reverse)
                         width: 50
                         anchors.verticalCenter: parent.verticalCenter
                         readOnly: true
                         Keys.onPressed: {
-                            set_scene.controlkey.config.rotate_reverse = ""
-                            if (!set_scene.controlkey.isConflict(event.key)) {
-                                text = set_scene.controlkey.retKey(event.key)
-                                set_scene.controlkey.config.rotate_reverse = event.key
+                            root.controlkey.config.rotate_reverse = ""
+                            if (!root.controlkey.isConflict(event.key)) {
+                                text = root.controlkey.retKey(event.key)
+                                root.controlkey.config.rotate_reverse = event.key
                             }
                             event.accepted = true
                         }
@@ -374,16 +371,16 @@ Item {
                     }
                     TextField {
                         height: 25
-                        text: set_scene.controlkey.retKey(
-                                  set_scene.controlkey.config.hold)
+                        text: root.controlkey.retKey(
+                                  root.controlkey.config.hold)
                         width: 50
                         anchors.verticalCenter: parent.verticalCenter
                         readOnly: true
                         Keys.onPressed: {
-                            set_scene.controlkey.config.hold = ""
-                            if (!set_scene.controlkey.isConflict(event.key)) {
-                                text = set_scene.controlkey.retKey(event.key)
-                                set_scene.controlkey.config.hold = event.key
+                            root.controlkey.config.hold = ""
+                            if (!root.controlkey.isConflict(event.key)) {
+                                text = root.controlkey.retKey(event.key)
+                                root.controlkey.config.hold = event.key
                             }
                             event.accepted = true
                         }
@@ -400,16 +397,16 @@ Item {
                     }
                     TextField {
                         height: 25
-                        text: set_scene.controlkey.retKey(
-                                  set_scene.controlkey.config.restart)
+                        text: root.controlkey.retKey(
+                                  root.controlkey.config.restart)
                         width: 50
                         anchors.verticalCenter: parent.verticalCenter
                         readOnly: true
                         Keys.onPressed: {
-                            set_scene.controlkey.config.restart = ""
-                            if (!set_scene.controlkey.isConflict(event.key)) {
-                                text = set_scene.controlkey.retKey(event.key)
-                                set_scene.controlkey.config.restart = event.key
+                            root.controlkey.config.restart = ""
+                            if (!root.controlkey.isConflict(event.key)) {
+                                text = root.controlkey.retKey(event.key)
+                                root.controlkey.config.restart = event.key
                             }
                             event.accepted = true
                         }
@@ -426,16 +423,16 @@ Item {
                     }
                     TextField {
                         height: 25
-                        text: set_scene.controlkey.retKey(
-                                  set_scene.controlkey.config.replay)
+                        text: root.controlkey.retKey(
+                                  root.controlkey.config.replay)
                         width: 50
                         anchors.verticalCenter: parent.verticalCenter
                         readOnly: true
                         Keys.onPressed: {
-                            set_scene.controlkey.config.replay = ""
-                            if (!set_scene.controlkey.isConflict(event.key)) {
-                                text = set_scene.controlkey.retKey(event.key)
-                                set_scene.controlkey.config.replay = event.key
+                            root.controlkey.config.replay = ""
+                            if (!root.controlkey.isConflict(event.key)) {
+                                text = root.controlkey.retKey(event.key)
+                                root.controlkey.config.replay = event.key
                             }
                             event.accepted = true
                         }
@@ -452,15 +449,15 @@ Item {
              color:"white"
          }
          TextField{height:25
-           text:set_scene.controlkey.retKey(set_scene.controlkey.config.ai)
+           text:root.controlkey.retKey(root.controlkey.config.ai)
            width:50
            anchors.verticalCenter: parent.verticalCenter
            readOnly:true
            Keys.onPressed: {
-               set_scene.controlkey.config.ai=""
-               if(!set_scene.controlkey.isConflict(event.key)){
-               text=set_scene.controlkey.retKey(event.key)
-                   set_scene.controlkey.config.ai=event.key
+               root.controlkey.config.ai=""
+               if(!root.controlkey.isConflict(event.key)){
+               text=root.controlkey.retKey(event.key)
+                   root.controlkey.config.ai=event.key
                    }
                event.accepted=true
            }
@@ -482,7 +479,7 @@ Item {
                     spacing: 10
                     ScrollView {
                         id: view
-                        width: screen.width - 10
+                        width: root.width - 10
                         height: 100
                         clip: true
                         TextArea {
@@ -504,10 +501,12 @@ Item {
                         height: 30
                         text: "播放"
                         onClicked: {
-                            setscene.visible = !setscene.visible
-                            if (setscene.visible == false) {
-                                w.focus = true
-                                w.replay(replayData.text)
+                            root.visible = !root.visible
+                            if (root.visible == false) {
+                                if (tetris != null) {
+                                    tetris.focus = true
+                                    tetris.replay(replayData.text)
+                                }
                                 replayData.text = ""
                             }
                         }
@@ -524,11 +523,11 @@ Item {
              color:"white"
          }
          TextField{height:25
-           text:set_scene.controlkey.config.blockstyle
+           text:root.controlkey.config.blockstyle
            width:50
            anchors.verticalCenter: parent.verticalCenter
            onEditingFinished:{
-           set_scene.controlkey.config.blockstyle=text
+           root.controlkey.config.blockstyle=text
            }
          }
          }
@@ -543,7 +542,7 @@ Item {
              color:"white"
          }
          TextField{height:25
-           text:set_scene.controlkey.config.background
+           text:root.controlkey.config.background
            width:50
            anchors.verticalCenter: parent.verticalCenter
          }

@@ -47,7 +47,7 @@ public:
         int holdKey = Qt::Key_C;
         int restartKey = Qt::Key_R;
         int dasDelay = 65;
-        int arrDelay = 16;
+        int arrDelay = 12;
         int softdropDelay = 8;
         int replay = Qt::Key_Q;
     };
@@ -81,7 +81,7 @@ public:
     Q_INVOKABLE void replay(const QString &str = ""); //重播
     void replayFunc();
     int timeRecord();//录像操作时间点
-    void toFresh(Piece &, QVector<Pos> &, QVector<int> &);
+    void toFresh(Piece &, QVector<Pos> &, QVector<int> &,const std::tuple<bool,bool,int>&);
     QVector<Oper> caculateBot(TetrisNode &, int); //bot计算
     void botCall();//bot调用执行操作
     void ExampleMap();//使用地图;
@@ -119,7 +119,7 @@ public:
     bool digMod = false;
     bool deaded = false;
     QFutureWatcher<QVector<Oper>> watcher;
-    QThread thread;
+    QThread td;
 public slots:
     void testPath()
     {

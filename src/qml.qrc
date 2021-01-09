@@ -7,5 +7,6 @@
         <file>feildBlock.qml</file>
         <file>SetScene.qml</file>
         <file>controlKey.js</file>
+        <file>TetrisUI.qml</file>
     </qresource>
 </RCC>

@@ -1,7 +1,7 @@
 ﻿ let config={
       lock_delay:30,
       das_delay:65,
-      das_repeat:16,
+      das_repeat:12,
       softDropSpeed:8,
       shadow:true,
       left_move:Qt.Key_Left,

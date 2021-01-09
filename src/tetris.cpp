@@ -39,7 +39,6 @@ void Task::clearTimeout(int &timerId)
 int Task::setInterval(const std::function<void()> &func, int delay)
 {
     int timerId;
-    // qDebug()<<"setInterval";
     if (thread() != QThread::currentThread()) {
         QMetaObject::invokeMethod(this, "startTimer_", Qt::BlockingQueuedConnection, Q_RETURN_ARG(int, timerId), Q_ARG(int, delay));
     } else {
@@ -65,14 +64,14 @@ void Task::clearInterval(int &timerId)
 void Task::timerEvent(QTimerEvent *event)
 {
     auto id = event->timerId();
-    auto x = m_intervalHash.value(id, nullptr);
-    if (x == nullptr) {
-        x = m_timeoutHash.value(id, nullptr);
-        if (x != nullptr)
+    auto func = m_intervalHash.value(id, nullptr);
+    if (func == nullptr) {
+        func = m_timeoutHash.value(id, nullptr);
+        if (func != nullptr)
             clearTimeout(id);
     }
-    if (x != nullptr) {
-        x();
+    if (func != nullptr) {
+        func();
     }
 }
 
@@ -80,15 +79,15 @@ Tetris::Tetris()
 {
     connect(&watcher, SIGNAL(finished()),  this, SLOT(testPath()));
     TetrisNode::init();
-    task.moveToThread(&thread);
-    thread.start(QThread::Priority::TimeCriticalPriority);
+    task.moveToThread(&td);
+    td.start(QThread::Priority::TimeCriticalPriority);
     startTime = std::chrono::high_resolution_clock::now();
 }
 
 Tetris::~Tetris()
 {
-    thread.terminate();
-    thread.wait();
+    td.terminate();
+    td.wait();
     TetrisNode::distruct();
 }
 
@@ -182,6 +181,7 @@ void Tetris::hold()
         if (!isReplay)
             record.add(Oper::Hold, timeRecord());
         passHold();
+        tn.lastRotate = false;
     }
     if (res == 2)
         passNext();
@@ -235,16 +235,17 @@ void Tetris::left()
         if (!isReplay)
             record.add(Oper::Left, timeRecord());
         passPiece();
+        tn.lastRotate = false;
     }
 }
 
 void Tetris::right()
 {
-
     if (TetrisNode::shift(tn, map, 1, 0)) {
         if (!isReplay)
             record.add(Oper::Right, timeRecord());
         passPiece();
+        tn.lastRotate = false;
     }
 }
 
@@ -254,6 +255,7 @@ void Tetris::softdrop()
         if (!isReplay)
             record.add(Oper::SoftDrop, timeRecord());
         passPiece();
+        tn.lastRotate = false;
     }
 }
 
@@ -261,10 +263,12 @@ void Tetris::harddrop()
 {
     if (!isReplay)
         record.add(Oper::HardDrop, timeRecord());
-  //  qDebug()<<Tool::printType(tn.type);
     mutex.lock();
     holdSys.reset();
-    tn.pos.y += tn.getDrop(map);
+    auto dropDis = tn.getDrop(map);
+    if (dropDis > 0)
+        tn.lastRotate = false;
+    tn.pos.y += dropDis;
     if (tn.type == Piece::T) {
         auto [spin, mini] = tn.corner3(map);
         if (spin) {
@@ -277,8 +281,9 @@ void Tetris::harddrop()
     auto [pieceChanges, clear] = tn.attachs(map);
     //TetrisBot::evalute(tn, map, clear.size());
     // qDebug() << Tool::printNode(tn);
+    auto isTSpin = (tn.typeTspin != TspinType::None && tn.lastRotate);
     if (clear.size() == 4 || (clear.size() > 0 && tn.typeTspin != TspinType::None))
-        gamedata.b2b = 1;
+        gamedata.b2b++;
     else if (clear.size() > 0)
         gamedata.b2b = 0;
     if (clear.size() > 0) {
@@ -289,9 +294,8 @@ void Tetris::harddrop()
         //   gamedata.comboState = false;
         gamedata.combo = 0;
     }
-//  qDebug() << "b2b:" << !!gamedata.b2b << " combo:" << gamedata.combo;
+    // qDebug() << "b2b:" << !!gamedata.b2b << " combo:" << gamedata.combo;
     auto pieceType = tn.type;
-
     auto piece = rand.getOne();
     passNext();
     tn = TetrisNode{piece, Pos(3, 0)};
@@ -326,7 +330,7 @@ void Tetris::harddrop()
     if (!tn.check(map))
         deaded = true;
     passPiece(true);
-    toFresh(pieceType, pieceChanges, clear);
+    toFresh(pieceType, pieceChanges, clear, std::tuple<bool, bool, int> {isTSpin, gamedata.b2b > 1, gamedata.combo});
 }
 
 void Tetris::ccw()
@@ -335,6 +339,7 @@ void Tetris::ccw()
         if (!isReplay)
             record.add(Oper::Ccw, timeRecord());
         passPiece();
+        tn.lastRotate = true;
     }
 }
 
@@ -344,6 +349,7 @@ void Tetris::cw()
         if (!isReplay)
             record.add(Oper::Cw, timeRecord());
         passPiece();
+        tn.lastRotate = true;
     }
 }
 
@@ -367,9 +373,10 @@ void Tetris::opers(Oper a)
     }
 }
 
-void Tetris::toFresh(Piece &_type, QVector<Pos> &pieceChanges, QVector<int> &clear)
+void Tetris::toFresh(Piece &_type, QVector<Pos> &pieceChanges, QVector<int> &clear, const std::tuple<bool, bool, int> &clearState)
 {
     QVariantList list, next;
+    auto [tspin, b2b, combo] = clearState;
     for (int y = 0; y < map.height; y++)
         for (int x = 0; x < map.width; x++) {
             list << static_cast<int>(map.colorDatas[y][x]);
@@ -394,6 +401,23 @@ void Tetris::toFresh(Piece &_type, QVector<Pos> &pieceChanges, QVector<int> &cle
     mapMsg.insert("changes", changes);
     mapMsg.insert("clear", clearMsg);
     mapMsg.insert("dead", deaded);
+    QString specialClear = "";
+    if (tspin)
+        specialClear = QString::fromLocal8Bit("T旋");
+    switch (clear.size()) {
+    case 0: break;
+    case 1: specialClear += QString::fromLocal8Bit("\n单消"); break;
+    case 2: specialClear += QString::fromLocal8Bit("\n双消"); break;
+    case 3: specialClear += QString::fromLocal8Bit("\n三消"); break;
+    case 4: specialClear = QString::fromLocal8Bit("四消"); break;
+    }
+    if (clear.size() > 0 && b2b)
+        specialClear += QString::fromLocal8Bit("[连续]");
+    if (combo - 1 > 0)
+        specialClear += QString::fromLocal8Bit(" \n%1 连击").arg(combo - 1);
+    if (map.count == 0)
+        specialClear += QString::fromLocal8Bit("\n完美清除");
+    mapMsg.insert("specialClear", specialClear);
     emit harddropFresh(mapMsg);
 };
 
