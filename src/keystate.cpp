@@ -16,9 +16,7 @@ bool KeyState::keyDown()
 {
     if (!press) {
         press = true;
-        // qDebug()<<name;
         func();
-
         if (noDas) {
             return true;
         }
@@ -36,8 +34,8 @@ bool KeyState::keyDown()
 void  KeyState::dasCall()
 {
     das = true;
+   // dasHandle = -1;
     moveCall(tetris->keyconfig.arrDelay);
-    dasHandle = -1;
 }
 
 void KeyState::moveCall(int delay)
@@ -56,7 +54,6 @@ void KeyState::moveCall(int delay)
 void KeyState::keyUp()
 {
     switchStopFlag = false;
-//   qDebug() << "up";
     press = false;
     if (!noDas) {
         das = false;

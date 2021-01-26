@@ -2,7 +2,7 @@
 import QtQuick 2.0
 Item {
     property int type: -1
-    property var blockSize: 19
+    property int blockSize: 19
     id: root
     function create(_type) {
         let showMinos = [[[1, 1], [1, 1]], [[1, 1, 1, 1]], [[0, 1, 0], [1, 1, 1]], [[0, 0, 1], [1, 1, 1]], [[1, 0, 0], [1, 1, 1]], [[0, 1, 1], [1, 1, 0]], [[1, 1, 0], [0, 1, 1]]]

@@ -3,7 +3,6 @@
 
 int BitCount(int n)
 {
-    // HD, Figure 5-2
     n = n - ((n >> 1) & 0x55555555);
     n = (n & 0x33333333) + ((n >> 2) & 0x33333333);
     n = (n + (n >> 4)) & 0x0f0f0f0f;
@@ -83,7 +82,8 @@ QString Tool:: printPath(QVector<Oper> &path)
     return a;
 }
 
-QString Tool:: printOper(Oper & x){
+QString Tool:: printOper(Oper &x)
+{
     QString a = "a";
     switch (x) {
     case Oper::None:
@@ -263,7 +263,6 @@ auto TetrisBot::make_path(TetrisNode &start_node, TetrisNode &land_point, Tetris
             }
             path.push_front(std::get<1>(result));
             if (dropToSd && NoSoftToBottom) {
-                //    qDebug()<<"youle";
                 path.remove(0);
                 path.insert(0, softDropDis, Oper::SoftDrop);
             }
@@ -278,7 +277,7 @@ auto TetrisBot::make_path(TetrisNode &start_node, TetrisNode &land_point, Tetris
     node_search.append(start_node);
     node_mark.insert(start_node, std::pair<TetrisNode, Oper> {TetrisNode{Piece::None}, Oper::None });
     auto disable_d = land_node.open(map);
-    if (land_node.type == Piece::T && land_node.typeTspin == TspinType::TspinMini)
+    if (land_node.type == Piece::T && land_node.typeTSpin == TSpinType::TSpinMini)
         disable_d = false;
     while (node_search.size() != 0) {
         auto next = node_search.takeFirst();
@@ -349,11 +348,11 @@ TetrisBot::EvalResult TetrisBot::evalute(TetrisNode &lp, TetrisMap &map, int cle
     if (lp.lastRotate && lp.type == Piece::T) {
         if (clear > 0 && lp.lastRotate) {
             if (clear == 1 && lp.mini && lp.spin) {
-                lp.typeTspin = TspinType::TspinMini;
+                lp.typeTSpin = TSpinType::TSpinMini;
             } else if (lp.spin) {
-                lp.typeTspin = TspinType::Tspin;
+                lp.typeTSpin = TSpinType::TSpin;
             } else {
-                lp.typeTspin = TspinType::None;
+                lp.typeTSpin = TSpinType::None;
             }
         }
     }
@@ -428,7 +427,7 @@ TetrisBot::EvalResult TetrisBot::evalute(TetrisNode &lp, TetrisMap &map, int cle
         }
 
         auto value = (0.
-                      - m.roof * 128
+                      - m.roof * 96
                       - m.colTrans  * 120
                       - m.rowTrans * 120
                       // - m.holes * 60
@@ -437,8 +436,8 @@ TetrisBot::EvalResult TetrisBot::evalute(TetrisNode &lp, TetrisMap &map, int cle
                       - m.holeDepth * 40
                      );
 
-        double rate = 32 / 5., mul = 1.0 / 4;
-        for (auto i = 0; i < m.holePosyIndex; ++i, rate *= mul) {
+        double rate = 32, mul = 1.0 / 4;
+        for (auto i = m.holePosyIndex - 1; i > -1; --i, rate *= mul) {
             value -= m.clearWidth[i] * rate;
         }
 
@@ -460,7 +459,7 @@ TetrisBot::EvalResult TetrisBot::evalute(TetrisNode &lp, TetrisMap &map, int cle
                     if (BitCount(y0) == map.width - 1) {
                         evalResult.t2Value += 1;
                         if (BitCount(y1) == map.width - 3) {
-                            evalResult.t2Value += 2;
+                             evalResult.t2Value += 2;
                             if (((y2 >> x & 7) == 4 || (y2 >> x & 7) == 1)) {
                                 evalResult.t2Value += 2;
                                 finding2 = false;
@@ -473,18 +472,18 @@ TetrisBot::EvalResult TetrisBot::evalute(TetrisNode &lp, TetrisMap &map, int cle
                 if ((y0 >> x & 7) == 3 && (y1 >> x & 7) == 1 && x < map.width - 3) {
                     auto value = 0;
                     if (BitCount(y0) == map.width - 1) {
-                        //  qDebug()<<"l";
-                        value += 1;
+                        //  value += 1;
                         if (BitCount(y1) == map.width - 2) {
-                            value += 1;
+                            //    value += 1;
                             if ((y2 >> x & 7) == 3 && (y3 >> x & 7) == 0) {
-                                value += 2;
+                                //      value += 2;
                                 if (BitCount(y2) == map.width - 1) {
-                                    value += 2;
+                                    //        value += 2;
                                     if ((y3 >> x & 7) == 0) {
-                                        value += 1;
+                                        //          value += 1;
                                         if ((y4 >> x & 7) == 4) {
-                                            value += 1;
+                                            //     value += 1;
+                                            value += 8;
                                         } else {
                                             value -= 2;
                                         }
@@ -502,18 +501,18 @@ TetrisBot::EvalResult TetrisBot::evalute(TetrisNode &lp, TetrisMap &map, int cle
                 else if ((y0 >> x & 7) == 6 && (y1 >> x & 7) == 4 && x > 0) {
                     auto value = 0;
                     if (BitCount(y0) == map.width - 1) {
-                        //     qDebug()<<"r";
-                        value += 1;
+                        //value += 1;
                         if (BitCount(y1) == map.width - 2) {
-                            value += 1;
+                            //value += 1;
                             if ((y2 >> x & 7) == 6 && (y3 >> x & 7) == 0) {
-                                value += 2;
+                                //value += 2;
                                 if (BitCount(y2) == map.width - 1) {
-                                    value += 2;
+                                    //value += 2;
                                     if ((y3 >> x & 7) == 0) {
-                                        value += 1;
+                                        //value += 1;
                                         if ((y4 >> x & 7) == 1) {
-                                            value += 1;
+                                            //value += 1;
+                                            value += 8;
                                         } else {
                                             value -= 2;
                                         }
@@ -533,9 +532,8 @@ TetrisBot::EvalResult TetrisBot::evalute(TetrisNode &lp, TetrisMap &map, int cle
     };
 
     evalResult.value = eval_map() +  tspinDetect();
-    //qDebug() << evalResult.value;
     evalResult.clear = clear;
-    evalResult.typeTspin = lp.typeTspin;
+    evalResult.typeTSpin = lp.typeTSpin;
     evalResult.safe = 999;
     evalResult.count = map.count;
     return evalResult;
@@ -570,30 +568,30 @@ TetrisBot::Status TetrisBot::get(const TetrisBot::EvalResult &evalResult, Tetris
         result.underAttack = 0;
         break;
     case 1:
-        if (evalResult.typeTspin == TspinType::TspinMini)
+        if (evalResult.typeTSpin == TSpinType::TSpinMini)
             result.attack += status.b2b ? 2 : 1;
-        else if (evalResult.typeTspin == TspinType::Tspin)
+        else if (evalResult.typeTSpin == TSpinType::TSpin)
             result.attack += status.b2b ? 3 : 2;
         result.attack += comboTable[std::min(tableMax - 1, ++result.combo)];
-        result.b2b = evalResult.typeTspin != TspinType::None;
+        result.b2b = evalResult.typeTSpin != TSpinType::None;
         break;
     case 2:
         result.attack += comboTable[std::min(tableMax - 1, ++result.combo)];
-        if (evalResult.typeTspin != TspinType::None) {
+        if (evalResult.typeTSpin != TSpinType::None) {
             result.like += 8;
             result.attack += status.b2b ? 5 : 4;
         } else
             result.attack += 1;
-        result.b2b = evalResult.typeTspin != TspinType::None;
+        result.b2b = evalResult.typeTSpin != TSpinType::None;
         break;
     case 3:
         result.attack += comboTable[std::min(tableMax - 1, ++result.combo)] ;
-        if (evalResult.typeTspin != TspinType::None) {
+        if (evalResult.typeTSpin != TSpinType::None) {
             result.like += 12;
             result.attack += status.b2b ? 8 : 6;
         } else
             result.attack +=  2;
-        result.b2b = evalResult.typeTspin != TspinType::None;
+        result.b2b = evalResult.typeTSpin != TSpinType::None;
         break;
     case 4:
         result.like += 8;
@@ -615,16 +613,16 @@ TetrisBot::Status TetrisBot::get(const TetrisBot::EvalResult &evalResult, Tetris
     auto t_expect = [&]() {
         if (hold == Piece::T)
             return 0;
-        for (auto i = depth - 1; i < next->size(); ++i) {
+        for (auto i = 0/*depth - 1*/; i < next->size(); ++i) {
             if (next->at(i) == Piece::T)
-                return (i - (depth - 1));
+                return (i /*- (depth - 1)*/);
         }
         return 14;
     };
 
     switch (hold) {
     case Piece::T:
-        if (evalResult.typeTspin == TspinType::None)
+        if (evalResult.typeTSpin == TSpinType::None)
             result.like += 4;
         break;
     case Piece::I:
@@ -641,12 +639,15 @@ TetrisBot::Status TetrisBot::get(const TetrisBot::EvalResult &evalResult, Tetris
                              0.
                              + result.maxAttack * 40
                              + result.attack * 256  * rate
+                    //         + (result.attack / std::max(1, evalResult.clear)) * 256 * rate
                              + (evalResult.t2Value) * (t_expect() < 8 ? 512 : 320) * 1.5
                              + (evalResult.safe >= 12 ? evalResult.t3Value * (t_expect() < 4 ? 10 : 8) * (result.b2b ? 512 : 256) / (6 + result.underAttack) : 0)
                              + (result.b2b ? 512 : 0)
                              + result.like * 64
                      ) * std::max<double>(0.05, (full_count_ - evalResult.count - result.mapRise * 10) / double(full_count_))
-                     + result.maxCombo * (result.maxCombo - 1) * 40);
+                     + result.maxCombo * (result.maxCombo - 1) * 40
+                    );
+
     return result;
 }
 
@@ -659,12 +660,6 @@ TreeContext::~TreeContext()
 bool CNP::operator()(TreeNode *const &a, TreeNode *const &b) const
 {
     return a->evalParm.value < b->evalParm.value;
-    /*if (a->evalParm.value != b->evalParm.value)
-     return a->evalParm.value < b->evalParm.value;
-     else
-     {
-     return a->evalParm.land_node > b->evalParm.land_node;
-     }*/
 }
 
 void TreeContext::createRoot(TetrisNode &_node, TetrisMap &_map, QVector<Piece> &dp, Piece _hold, int _b2b, int _combo)

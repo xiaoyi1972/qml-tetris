@@ -28,12 +28,42 @@ Window {
         }
     }
 
-    TetrisUI {
-        id: m
-        tetris: w
-        tetrisGame: TetrisGame
-        controlkey: ControlKey
+  /*  Tetris {
+        id: w1
+        focus: true
+        property var viewTetris: new TetrisGame.View(m1)
+        onWhl: viewTetris.fresh(a)
+        onHarddropFresh: viewTetris.hardDropFresh(a)
+        onNext: viewTetris.freshNext(a)
+        onHoldFresh: viewTetris.freshHold(a)
+        onRestartGame: viewTetris.startNewGame()
+        onMapFresh: viewTetris.mapFresh(a)
+        Component.onCompleted: {
+            viewTetris.startNewGame()
+            restart()
+        }
+    }*/
+
+    Row {
+        spacing: 30
         anchors.centerIn: parent
+        TetrisUI {
+            id: m
+            tetris: w
+            tetrisGame: TetrisGame
+            controlkey: ControlKey
+           // anchors.centerIn: parent
+            scale: 1
+        }
+
+  /*      TetrisUI {
+            id: m1
+            tetris: w1
+            tetrisGame: TetrisGame
+            controlkey: ControlKey
+            //anchors.centerIn: parent
+            scale: 0.7
+        }*/
     }
 
     SetScene {

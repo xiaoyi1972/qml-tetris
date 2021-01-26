@@ -12,25 +12,32 @@
 #include <tetrisBot.h>
 #include<algorithm>
 #include<chrono>
-#include<limits>
 #include <QtConcurrent>
+class MyThread: public QThread
+{
+    using QThread::run;
+public: MyThread(QObject *parent = 0): QThread(parent) {}
+    ~MyThread() {quit(); wait();};
+};
+
 class Task: public QObject
 {
     Q_OBJECT
+
 public slots:
     int setTimeOut(const std::function<void()> &, int delay);
     int setInterval(const std::function<void()> &, int delay);
+    void test(QThread *);
     void clearTimeout(int &);
     void clearInterval(int &);
-    void killTimer_(int );
-    int startTimer_(int );
+    void killTimer_(int);
+    int startTimer_(int);
     void timerEvent(QTimerEvent *);
-
 public:
     Task() = default;
+    void back(QThread *);
     QHash<int, std::function<void()>> m_intervalHash;
     QHash<int, std::function<void()>> m_timeoutHash;
-    QHash<QTimer *,std::function<void()>> timers;
 };
 
 class Tetris: public QQuickItem
@@ -56,6 +63,7 @@ public:
         int clear = 0;
         int b2b = 0;
         int combo = 0;
+        int pieces = 0;
         bool comboState = false;
     };
 
@@ -79,32 +87,15 @@ public:
     //辅助
     void opers(Oper a);//操作
     Q_INVOKABLE void replay(const QString &str = ""); //重播
-    void replayFunc();
+    void replayFunc(); //录像重播
+    void replayBotOperFunc(); //bot操作播放
     int timeRecord();//录像操作时间点
-    void toFresh(Piece &, QVector<Pos> &, QVector<int> &,const std::tuple<bool,bool,int>&);
+    void toFresh(Piece &, QVector<Pos> &, QVector<int> &, const std::tuple<bool, bool, int> &);
     QVector<Oper> caculateBot(TetrisNode &, int); //bot计算
     void botCall();//bot调用执行操作
     void ExampleMap();//使用地图;
-
-    void sleepTo(int msec)
-    {
-        QEventLoop eventloop;
-        QTimer::singleShot(msec, Qt::PreciseTimer, &eventloop, SLOT(quit()));
-        eventloop.exec();
-    }
-
-    void Tetris::replayFunc1()
-    {
-        if (!recordPath.isEnd()) {
-            auto [time, oper] = recordPath.play();
-            opers(oper);
-            handle = task.setTimeOut(std::bind(&Tetris::replayFunc1, this), time);
-        } else {
-            task.clearTimeout(handle);
-            if (tg)
-                botHandle = task.setTimeOut(std::bind(&Tetris::botCall, this), 0);
-        }
-    }
+    int sendTrash(std::tuple<std::tuple<bool, bool>, int> &);//计算攻击
+    void digModAdd(int, bool);//添加挖掘垃圾行
 
     Q_INVOKABLE void passPiece(bool newPiece = false);
     Q_INVOKABLE void passMap();
@@ -115,50 +106,40 @@ public:
     Task task;
     keyConfig keyconfig;
     int handle, botHandle = -1;
-    int digRows = 10;
-    bool digMod = false;
-    bool deaded = false;
     QFutureWatcher<QVector<Oper>> watcher;
-    QThread td;
+    static MyThread td;
+    //QThread td;
+
 public slots:
-    void testPath()
-    {
-        auto path  = watcher.result();
-        auto interval = 0;
-        for (auto i = 0; i < path.size(); i++) {
-            recordPath.add(path[i],  interval); //interval
-            if ((i + 1 < path.size()) &&  path[i + 1] == Oper::SoftDrop) {
-                interval = 16;
-            } else if (path[i] != Oper::HardDrop) {
-                interval = 30;
-            } else
-                interval = 0;
-        }
-        replayFunc1();
-    }
+    void playPath();
+
 private:
     bool tg = false;
-    Random rand;
+    Random randSys;
+    Hold holdSys{&randSys};
     gameData gamedata;
-    TetrisNode tn{rand.getOne()};
-    TetrisMap map{10, 20};
-    Hold holdSys{&rand};
-    Recorder record{rand.seed}, recordPath{rand.seed};
+    TetrisNode tn{randSys.getOne()};
+    TetrisMapEx map{10, 20};
+    QMutex mutex;
+    Recorder record{randSys.seed}, recordPath{randSys.seed};
     KeyState leftKey{this, std::bind(&Tetris::left, this)};
     KeyState rightKey{this, std::bind(&Tetris::right, this)};
     KeyState softDropKey{this, std::bind(&Tetris::softdrop, this), nullptr, true};
-    QMutex mutex;
     std::chrono::time_point<std::chrono::high_resolution_clock> startTime;
     bool isReplay = false;
+    QVector<int> comboTable{0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 4, 5, -1};
+    int tableMax = 14, underAttack = 0;
+    int digRows = 10, digRowsEnd = 100;
+    bool deaded = false, digMod = false;
 
 signals:
     void whl(QVariantMap a);
     void next(QVariantMap a);
     void holdFresh(QVariantMap a);
-    void restartGame();
     void harddropFresh(QVariantMap a);
     void activeFresh(QVariantMap a);
     void mapFresh(QVariantMap a);
+    void restartGame();
 };
 
 #endif // TETRIS_H

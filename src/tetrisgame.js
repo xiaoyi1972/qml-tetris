@@ -25,6 +25,7 @@ class View {
         this.nextsC = _component.nexts
         this.hold = _component.hold
         this.effectClear=_component.effectClear
+        this.clearText=_component.clearText;
         this.board = new Array(maxIndex).fill(null)
         this.nexts = []
     }
@@ -33,6 +34,7 @@ class View {
         this.feildLayer.range = 1
         this.shadow.opacity = 1
         this.effectClear.text=""
+        this.clearText.text=""
         for (let i = 0; i < maxIndex; i++) {
             if (this.board[i] !== null) {
                 this.board[i].destroy(0)
@@ -50,10 +52,10 @@ class View {
                 this.board[i] = null
             }
             if (map[i] !== -1) {
-                if (board[i] === null) {
+                if (this.board[i] === null) {
                     let x = parseInt(i / maxColumn)
                     let y = i % maxColumn
-                    createBlock(y, x, board, background, true)
+                    createBlock(y, x, this.board, this.background, true)
                     this.board[i].color = getTypeColor(map[i])
                 }
             }
@@ -65,6 +67,7 @@ class View {
         let clear = _data.clear
         let specialClear=_data.specialClear
         this.effectClear.text=specialClear
+       this.clearText.text=_data.clearStatus
         for (let i  of changes) {
             if (this.board[index(i.x, i.y)] == null)
                 createBlock(i.x, i.y, this.board, this.background)

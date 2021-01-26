@@ -1,6 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Shapes 1.15
 import QtQuick.Controls 2.15
+import QtQuick.Layouts 1.15
 
 Item {
     id: root
@@ -17,6 +18,7 @@ Item {
     property alias nexts: nextsC
     property alias hold: hold
     property alias effectClear: effectClear
+    property alias clearText: clearText
 
     Shape {
         id: displayBorder
@@ -47,7 +49,7 @@ Item {
     ShaderEffect {
         id: feildLayer
         anchors.fill: parent
-        visible: true
+        visible: false
         property variant src: background
         property double range: 1
         property double unVisible: (root.tetrisGame.RowOver)
@@ -91,8 +93,8 @@ gl_FragColor =vec4(tex.rgb,tex.a);
     Item {
         id: background
         anchors.fill: parent
-        layer.enabled: true
-        visible: false
+       // layer.enabled: true
+        visible: true
     }
 
     Item {
@@ -200,7 +202,7 @@ gl_FragColor =vec4(tex.rgb,tex.a);
         }
     }
 
-    Column {
+        Column  {
         anchors.top: displayBorder.top
         anchors.right: root.left
         anchors.margins: 5
@@ -215,12 +217,14 @@ gl_FragColor =vec4(tex.rgb,tex.a);
         }
     }
 
-    Column {
+    ColumnLayout {
         anchors.right: root.left
         anchors.bottom: root.bottom
         anchors.margins: 5
         anchors.topMargin: 0
+        layoutDirection: Qt.RightToLeft
         spacing: 10
+
 
         /*Text {
             font.pointSize: 16
@@ -229,7 +233,16 @@ gl_FragColor =vec4(tex.rgb,tex.a);
         Text {
             id: effectClear
             font.pointSize: 16
-        //    font.bold: true
+            //    font.bold: true
+            text: ""
+            horizontalAlignment: Text.AlignRight
+        }
+
+        Text {
+            id: clearText
+            font.pointSize: 16
+            // visible: false
+            //font.bold: true
             text: ""
             horizontalAlignment: Text.AlignRight
         }

@@ -4,16 +4,15 @@
 #include<QVector>
 #include <QTime>
 #include<QDebug>
-#include<QString>
-#include <QtMath>
-#include <QSet>
 #include<QDataStream>
 #include <QBuffer>
 #include <QRandomGenerator>
-
+#include<functional>
+#include<cmath>
 enum class Piece {Trash = -2, None = -1, O, I, T, L, J, S, Z};
 enum class Oper {None = -1, Left, Right, SoftDrop, HardDrop, Hold, Cw, Ccw, DropToBottom};
-enum class  TspinType {None = -1, TspinMini, Tspin};
+enum class  TSpinType {None = -1, TSpinMini, TSpin};
+
 class  Pos
 {
 public:
@@ -29,16 +28,14 @@ public:
 class TetrisMap
 {
 public:
-    using colorDatasType = QVector<QVector<Piece>>;
-    using pieceArrType = QVector<Piece>;
-    TetrisMap(int _width = 0, int _height = 0): width(_width), height(_height)
+    TetrisMap(int _width = 0, int _height = 0)
     {
+        width = _width;
+        height = _height;
         roof = _height;
         count = 0;
         data = new int[height];
-        memset(data, 0, height * sizeof(int));
-        colorDatas.resize(height);
-        colorDatas.fill(pieceArrType(width).fill(Piece::None));
+        std::memset(data, 0, height * sizeof(int));
     }
 
     TetrisMap(const TetrisMap &A)
@@ -48,8 +45,7 @@ public:
         roof = A.roof;
         count = A.count;
         data = new int[height];
-        memcpy(data, A.data, height * sizeof(int));
-        colorDatas = A.colorDatas;
+        std::memcpy(data, A.data, height * sizeof(int));
     }
 
     void operator=(TetrisMap &A)
@@ -61,8 +57,7 @@ public:
         delete [] data;
         data = nullptr;
         data = new int[height];
-        memcpy(data, A.data, height * sizeof(int));
-        colorDatas = A.colorDatas;
+        std::memcpy(data, A.data, height * sizeof(int));
     }
 
     void operator=(TetrisMap &&A)
@@ -74,8 +69,7 @@ public:
         delete [] data;
         data = nullptr;
         data = new int[height];
-        memcpy(data, A.data, height * sizeof(int));
-        colorDatas = A.colorDatas;
+        std::memcpy(data, A.data, height * sizeof(int));
     }
 
     ~TetrisMap()
@@ -91,7 +85,96 @@ public:
         for (auto i = 0; i < height ; i++) {
             if (data[i] == full) {
                 change.append(i);
-                memcpy(data + 1, data, i * sizeof(int));
+                std::memcpy(data + 1, data, i * sizeof(int));
+                data[0] = 0;
+            }
+        }
+        count -= change.size() * width;
+        roof += change.size();
+        return change;
+    }
+
+    int operator()(int x, int y) const
+    {
+        if (x < 0 || x > height - 1 || y < 0 || y > width - 1)
+            return 1;
+        else
+            return (data[x] >> y) & 1;
+    }
+    int width, height;//宽 高
+    int roof, count; //最高位置 块数
+    int *data = nullptr; //数据
+};
+
+
+class TetrisMapEx: public TetrisMap
+{
+public:
+    using colorDatasType = QVector<QVector<Piece>>;
+    using pieceArrType = QVector<Piece>;
+    TetrisMapEx(int _width = 0, int _height = 0)
+    {
+        width = _width;
+        height = _height;
+        roof = _height;
+        count = 0;
+        data = new int[height];
+        std::memset(data, 0, height * sizeof(int));
+        colorDatas.resize(height);
+        colorDatas.fill(pieceArrType(width).fill(Piece::None));
+    }
+
+    TetrisMapEx(const TetrisMapEx &A)
+    {
+        width = A.width;
+        height = A.height;
+        roof = A.roof;
+        count = A.count;
+        data = new int[height];
+        std::memcpy(data, A.data, height * sizeof(int));
+        colorDatas = A.colorDatas;
+    }
+
+    void operator=(TetrisMapEx &A)
+    {
+        width = A.width;
+        height = A.height;
+        roof = A.roof;
+        count = A.count;
+        delete [] data;
+        data = nullptr;
+        data = new int[height];
+        std::memcpy(data, A.data, height * sizeof(int));
+        colorDatas = A.colorDatas;
+    }
+
+    void operator=(TetrisMapEx &&A)
+    {
+        width = A.width;
+        height = A.height;
+        roof = A.roof;
+        count = A.count;
+        delete [] data;
+        data = nullptr;
+        data = new int[height];
+        std::memcpy(data, A.data, height * sizeof(int));
+        colorDatas = A.colorDatas;
+    }
+
+    ~TetrisMapEx()
+    {
+        delete [] data;
+        data = nullptr;
+    }
+
+    auto clear()
+    {
+        QVector<int> change;
+        auto full = (1 << width) - 1;
+        for (auto i = 0; i < height ; i++) {
+            if (data[i] == full) {
+                change.append(i);
+                std::memcpy(data + 1, data, i * sizeof(int));
                 data[0] = 0;
                 colorDatas.remove(i);
                 colorDatas.push_front(pieceArrType(width).fill(Piece::None));
@@ -120,24 +203,11 @@ public:
                 }
             }
     }
-
-    int operator()(int x, int y)
-    {
-        if (x < 0 || x > height - 1 || y < 0 || y > width - 1)
-            return 1;
-        else
-            return (data[x] >> y) & 1;
-    }
-    int width, height;//宽 高
-    int roof, count; //最高位置 块数
-    int *data = nullptr; //数据
     colorDatasType colorDatas;
 };
 
-
 class TetrisNode
 {
-    using datas = QVector<QVector<int>*> ;
     using data = QVector<int>;
 public:
     TetrisNode(Piece _type = Piece::None, Pos && _pos = Pos(3, 0), int _rotateState = 0)
@@ -147,16 +217,15 @@ public:
         pos = _pos;
         type = _type;
         rotateState = _rotateState;
-        if (rotateDatasReady)
-            mdata = rotateDatas[type]->at(rotateState);
+        mdata = &rotateDatas[type][rotateState];
     }
 
-    int full(int x, int y)
+    int full(int x, int y) const
     {
         return operator()(x, y);
     }
 
-    int operator()(int x, int y)
+    int operator()(int x, int y) const
     {
         if (x < 0 || x > mdata->size() - 1 || y < 0 || y > mdata->size() - 1)
             return 0;
@@ -183,24 +252,24 @@ public:
     {
         rotateState = !_reverse ? rotateState + _index : rotateState - _index;
         rotateState = (rotateState < 0 ? rotateState + 4 : rotateState) % 4;
-        mdata = rotateDatas[type]->at(rotateState);
+        mdata = &rotateDatas[type][rotateState];
     }
 
-    int check(TetrisMap &map, int _x, int  _y)
+    bool check(TetrisMap &map, int _x, int  _y) const
     {
-        int real = 1;
+        auto real = true;
         auto size = mdata->size();
         for (int x = 0; x < size; x++)
             for (int y = 0; y < size; y++) {
                 if (operator()(y, x) && map(_y + y, _x + x)) {
-                    real = 0;
+                    real = false;
                     return real;
                 }
             }
         return real;
     }
 
-    int check(TetrisMap &map)
+    bool check(TetrisMap &map) const
     {
         return check(map, pos.x, pos.y);
     }
@@ -211,7 +280,7 @@ public:
         pos.y += _y;
     }
 
-    std::tuple<QVector<Pos>, QVector<int>> attachs(TetrisMap &map)
+    std::tuple<QVector<Pos>, QVector<int>> attachs(TetrisMapEx &map)
     {
         QVector<Pos> change;
         auto size = mdata->size();
@@ -237,7 +306,7 @@ public:
     {
         auto size = mdata->size();
         for (auto i = 0; i < size; i++) {
-            auto dataI = pos.x > 0 ? mdata->at(i) << pos.x : mdata->at(i) >> qAbs(pos.x);
+            auto dataI = pos.x > 0 ? mdata->at(i) << pos.x : mdata->at(i) >> std::abs(pos.x);
             map.data[i + pos.y] |= dataI;
             if (dataI) {
                 map.roof = std::min(pos.y + i, map.roof);
@@ -247,7 +316,7 @@ public:
             for (int y = 0; y < size; y++) {
                 if (operator()(y, x)) {
                     map.count++;
-                    map.colorDatas[pos.y + y][pos.x + x] = type;
+                    //     map.colorDatas[pos.y + y][pos.x + x] = type;
                 }
             }
         auto clears = map.clear();
@@ -281,9 +350,9 @@ public:
         default: i = -1; break;
         }
         if (type != Piece::I) {
-            return kickDatas[true]->at(i);
+            return kickDatas[true][i];
         } else {
-            return kickDatas[false]->at(i);
+            return kickDatas[false][i];
         }
     }
 
@@ -321,9 +390,9 @@ public:
         auto prePos = _tn.pos;
         if (!_tn.check(_map)) {
             auto offsetRes = false;
-            for (auto i = 0; i < kd->size() / 2; i++) {
-                _tn.pos.x = prePos.x + kd->at(i * 2);
-                _tn.pos.y = prePos.y - kd->at(i * 2 + 1);
+            for (auto i = 0; i < kd.size() / 2; i++) {
+                _tn.pos.x = prePos.x + kd.at(i * 2);
+                _tn.pos.y = prePos.y - kd.at(i * 2 + 1);
                 if (_tn.check(_map)) {
                     offsetRes = true;
                     break;
@@ -345,6 +414,17 @@ public:
         return next;
     }
 
+    std::tuple<bool, bool> corner3(TetrisMap &map)
+    {
+        auto mini = 0, sum = 0;
+        auto &_x = pos.x;
+        auto &_y = pos.y;
+#define occupied(y,x) int(!full(y, x) && map(_y + y, _x + x))
+        mini = occupied(0, 1) + occupied(1, 0) + occupied(2, 1) + occupied(1, 2);
+        sum = map(_y, _x) + map(_y + 2, _x) + map(_y, _x + 2) + map(_y + 2, _x + 2);
+        return{sum > 2, mini == 1};
+    }
+
     uint cellsEqual()
     {
         uint seed = 0;
@@ -360,43 +440,14 @@ public:
         return seed;
     }
 
-    std::tuple<bool, bool> corner3(TetrisMap &map)
-    {
-        auto cCB = [&](int x, int y) {
-            auto res = 1;
-            if (x < 0 || x > (map.width - 1) || y < 0 || y > (map.height - 1))
-                res = 0;
-            return res;
-        };
-        auto ifspin = 0, ifmini = 0, mini = 0, sum = 0;
-        auto &_x = pos.x;
-        auto &_y = pos.y;
-        mini = int(!cCB(_x + 1, _y + 0) || (!full(0, 1) && map(_y + 0, _x + 1))) +
-               int(!cCB(_x + 0, _y + 1) || (!full(1, 0) && map(_y + 1, _x + 0))) +
-               int(!cCB(_x + 1, _y + 2) || (!full(2, 1) && map(_y + 2, _x + 1))) +
-               int(!cCB(_x + 2, _y + 1) || (!full(1, 2) && map(_y + 1, _x + 2)));
-        sum = int(!cCB(_x, _y) || map(_y, _x)) +
-              int(!cCB(_x, _y + 2) || map(_y + 2, _x)) +
-              int(!cCB(_x + 2, _y) || map(_y, _x + 2)) +
-              int(!cCB(_x + 2, _y + 2) || map(_y + 2, _x + 2));
-        if (sum > 2)
-            ifspin = 1;
-        if (mini == 1)
-            ifmini = 1;
-        return {  ifspin, ifmini };
-    }
-
     Pos pos;
     data *mdata;
     Piece type;
-    int rotateState;
+    char rotateState;
     bool mini = false, spin = false, lastRotate = false;
-    TspinType typeTspin = TspinType::None;
-    static bool rotateDatasReady;
-    static QMap<Piece, QVector<data *>*> rotateDatas;
-    static QMap<bool, QVector<QVector<int> *>*> kickDatas;
-    void static init();
-    void static distruct();
+    TSpinType typeTSpin = TSpinType::None;
+    static QMap<Piece, QVector<data >> rotateDatas;
+    static QMap<bool, QVector<QVector<int> >> kickDatas;
 };
 
 
@@ -443,9 +494,9 @@ class Random
 public:
     Random(int _seed = QTime(0, 0, 0).msecsTo(QTime::currentTime()))
     {
-       seed = _seed;
-       rand.seed(seed);
-       // qsrand(seed);        //设置随机数种子
+        seed = _seed;
+        rand.seed(seed);
+        // qsrand(seed);        //设置随机数种子
     }
 
     void getBag()
@@ -454,7 +505,7 @@ public:
         //bag=QVector<Piece>{Piece::J,Piece::Z,Piece::S,Piece::J,Piece::Z,Piece::T,Piece::I};
         //return;
         do {
-          //  auto num = static_cast<Piece>(qrand() % 7);
+            //  auto num = static_cast<Piece>(qrand() % 7);
             auto num = static_cast<Piece>(rand.generate() % 7);
             if (bag.contains(num)) {
                 continue;
@@ -602,7 +653,7 @@ public:
     std::tuple<int, Oper>play()
     {
         auto playIndex_ = playIndex++;
-        return{playIndex >= time.size() ? 0 : time[playIndex], playIndex_>=oper.size()?Oper::None:oper[playIndex_]};
+        return{playIndex >= time.size() ? 0 : time[playIndex], playIndex_ >= oper.size() ? Oper::None : oper[playIndex_]};
     }
 
     void reset()

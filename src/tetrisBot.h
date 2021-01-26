@@ -40,7 +40,7 @@ struct EvalResult {
     double value = 0.;
     int clear = 0;
     int count = 0;
-    TspinType typeTspin = TspinType::None;
+    TSpinType typeTSpin = TSpinType::None;
 };
 
 QVector<TetrisNode> search(TetrisNode &, TetrisMap &);
@@ -69,7 +69,6 @@ private:
     bool isOpenHold = true;
     TreeNode *root = nullptr;
     bool test = false;
-    QVector<double> width_cache;
 };
 
 class CNP
