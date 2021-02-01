@@ -49,7 +49,7 @@ Item {
     ShaderEffect {
         id: feildLayer
         anchors.fill: parent
-        visible: false
+        visible: true
         property variant src: background
         property double range: 1
         property double unVisible: (root.tetrisGame.RowOver)
@@ -93,8 +93,8 @@ gl_FragColor =vec4(tex.rgb,tex.a);
     Item {
         id: background
         anchors.fill: parent
-       // layer.enabled: true
-        visible: true
+        layer.enabled: true
+        visible: false
     }
 
     Item {

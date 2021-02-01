@@ -2,11 +2,11 @@
 #define TETRISBASE_H
 #include<QMap>
 #include<QVector>
-#include <QTime>
+#include<QTime>
 #include<QDebug>
 #include<QDataStream>
-#include <QBuffer>
-#include <QRandomGenerator>
+#include<QBuffer>
+#include<QRandomGenerator>
 #include<functional>
 #include<cmath>
 enum class Piece {Trash = -2, None = -1, O, I, T, L, J, S, Z};
@@ -261,7 +261,7 @@ public:
         auto size = mdata->size();
         for (int x = 0; x < size; x++)
             for (int y = 0; y < size; y++) {
-                if (operator()(y, x) && map(_y + y, _x + x)) {
+                if (full(y, x) && map(_y + y, _x + x)) {
                     real = false;
                     return real;
                 }
@@ -285,7 +285,7 @@ public:
         QVector<Pos> change;
         auto size = mdata->size();
         for (auto i = 0; i < size; i++) {
-            auto dataI = pos.x > 0 ? mdata->at(i) << pos.x : mdata->at(i) >> qAbs(pos.x);
+            auto dataI = pos.x > 0 ? mdata->at(i) << pos.x : mdata->at(i) >> std::abs(pos.x);
             map.data[i + pos.y] |= dataI;
             if (dataI) {
                 map.roof = std::min(pos.y + i, map.roof);
@@ -293,7 +293,7 @@ public:
         }
         for (int x = 0; x < size; x++)
             for (int y = 0; y < size; y++) {
-                if (operator()(y, x)) {
+                if (full(y, x)) {
                     map.count++;
                     change.append(Pos{pos.y + y, pos.x + x});
                     map.colorDatas[pos.y + y][pos.x + x] = type;
@@ -314,9 +314,8 @@ public:
         }
         for (int x = 0; x < size; x++)
             for (int y = 0; y < size; y++) {
-                if (operator()(y, x)) {
+                if (full(y, x)) {
                     map.count++;
-                    //     map.colorDatas[pos.y + y][pos.x + x] = type;
                 }
             }
         auto clears = map.clear();
@@ -432,7 +431,7 @@ public:
         auto size = mdata->size();
         for (int x = 0; x < size; x++)
             for (int y = 0; y < size; y++) {
-                if (operator()(y, x)) {
+                if (full(y, x)) {
                     seed = hash(seed, pos.x + x);
                     seed = hash(seed, pos.y + y);
                 }

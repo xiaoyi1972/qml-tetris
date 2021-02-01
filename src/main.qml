@@ -15,13 +15,7 @@ Window {
     Tetris {
         id: w
         focus: true
-        property var viewTetris: new TetrisGame.View(m)
-        onWhl: viewTetris.fresh(a)
-        onHarddropFresh: viewTetris.hardDropFresh(a)
-        onNext: viewTetris.freshNext(a)
-        onHoldFresh: viewTetris.freshHold(a)
-        onRestartGame: viewTetris.startNewGame()
-        onMapFresh: viewTetris.mapFresh(a)
+        property var viewTetris: new TetrisGame.View(m,this)
         Component.onCompleted: {
             viewTetris.startNewGame()
             restart()
@@ -54,6 +48,12 @@ Window {
             controlkey: ControlKey
            // anchors.centerIn: parent
             scale: 1
+            SetScene {
+                id: setscene
+                tetris: w
+                anchors.fill: m
+                controlkey: ControlKey
+            }
         }
 
   /*      TetrisUI {
@@ -66,10 +66,5 @@ Window {
         }*/
     }
 
-    SetScene {
-        id: setscene
-        tetris: w
-        anchors.fill: m
-        controlkey: ControlKey
-    }
+
 }

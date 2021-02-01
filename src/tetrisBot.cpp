@@ -428,7 +428,7 @@ TetrisBot::EvalResult TetrisBot::evalute(TetrisNode &lp, TetrisMap &map, int cle
 
         auto value = (0.
                       - m.roof * 96
-                      - m.colTrans  * 120
+                      - m.colTrans  * 90
                       - m.rowTrans * 120
                       // - m.holes * 60
                       - m.holeLines * 380
@@ -440,7 +440,6 @@ TetrisBot::EvalResult TetrisBot::evalute(TetrisNode &lp, TetrisMap &map, int cle
         for (auto i = m.holePosyIndex - 1; i > -1; --i, rate *= mul) {
             value -= m.clearWidth[i] * rate;
         }
-
         return value;
     };
 
@@ -454,12 +453,12 @@ TetrisBot::EvalResult TetrisBot::evalute(TetrisNode &lp, TetrisMap &map, int cle
             auto y2 = y - 2 > -1 ? map.data[y - 2] : 0;
             auto y3 = y - 3 > -1 ? map.data[y - 3] : 0;
             auto y4 = y - 4 > -1 ? map.data[y - 4] : 0;
-            for (int x = 0; finding2 && x < map.width ; ++x) {
+            for (int x = 0; finding2 && x < map.width - 2 ; ++x) {
                 if (((y0 >> x & 7) == 5) && ((y1 >> x & 7) == 0)) {
                     if (BitCount(y0) == map.width - 1) {
                         evalResult.t2Value += 1;
                         if (BitCount(y1) == map.width - 3) {
-                             evalResult.t2Value += 2;
+                            evalResult.t2Value += 2;
                             if (((y2 >> x & 7) == 4 || (y2 >> x & 7) == 1)) {
                                 evalResult.t2Value += 2;
                                 finding2 = false;
@@ -536,18 +535,20 @@ TetrisBot::EvalResult TetrisBot::evalute(TetrisNode &lp, TetrisMap &map, int cle
     evalResult.typeTSpin = lp.typeTSpin;
     evalResult.safe = 999;
     evalResult.count = map.count;
+    evalResult.type = lp.type;
     return evalResult;
 }
 
 
 TetrisBot::Status TetrisBot::get(const TetrisBot::EvalResult &evalResult, TetrisBot::Status &status, Piece hold, QVector<Piece> *next, int depth)
 {
-    QVector<int> comboTable{0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 4, 5, -1};
-    int tableMax = 14;
-    auto full_count_ = 24 * 10;
+    QVector<int> comboTable{ 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 4, 5, -1};
+    int tableMax = 13;
+    auto full_count_ = 20 * 10;
     auto result = status;
-    result.value += evalResult.value;
+    result.value = evalResult.value;
     result.mapRise = 0;
+
     if (evalResult.safe <= 0) {
         result.value -= 99999;
     }
@@ -639,7 +640,6 @@ TetrisBot::Status TetrisBot::get(const TetrisBot::EvalResult &evalResult, Tetris
                              0.
                              + result.maxAttack * 40
                              + result.attack * 256  * rate
-                    //         + (result.attack / std::max(1, evalResult.clear)) * 256 * rate
                              + (evalResult.t2Value) * (t_expect() < 8 ? 512 : 320) * 1.5
                              + (evalResult.safe >= 12 ? evalResult.t3Value * (t_expect() < 4 ? 10 : 8) * (result.b2b ? 512 : 256) / (6 + result.underAttack) : 0)
                              + (result.b2b ? 512 : 0)
@@ -647,8 +647,14 @@ TetrisBot::Status TetrisBot::get(const TetrisBot::EvalResult &evalResult, Tetris
                      ) * std::max<double>(0.05, (full_count_ - evalResult.count - result.mapRise * 10) / double(full_count_))
                      + result.maxCombo * (result.maxCombo - 1) * 40
                     );
-
     return result;
+}
+
+TreeContext::TreeContext()
+{
+    for (auto i = 0; i < 7; i++) {
+        nodes.append(TetrisNode{static_cast<Piece>(i)});
+    }
 }
 
 TreeContext::~TreeContext()
@@ -659,19 +665,20 @@ TreeContext::~TreeContext()
 
 bool CNP::operator()(TreeNode *const &a, TreeNode *const &b) const
 {
-    return a->evalParm.value < b->evalParm.value;
+    return  a->evalParm.status < b->evalParm.status;
 }
 
 void TreeContext::createRoot(TetrisNode &_node, TetrisMap &_map, QVector<Piece> &dp, Piece _hold, int _b2b, int _combo)
 {
     nexts = dp;
     noneHoldFirstNexts = dp.mid(1, -1);
-    level.resize(dp.size() + 1);
-    extendedLevel.resize(dp.size() + 1);
+    auto depth = dp.size() + 1 + (_hold == Piece::None ?  -1 : 0);
+    level.resize(depth);
+    extendedLevel.resize(depth);
     TreeNode *tree = new TreeNode;
     tree->context = this;
     tree->nexts = &nexts;
-    tree->node = _node;
+    tree->node = &nodes[static_cast<int>(_node.type)];
     tree->map = _map;
     tree->hold = _hold;
     tree->evalParm.status.b2b = _b2b;
@@ -709,7 +716,7 @@ TreeNode::TreeNode(TreeContext *_ctx, TreeNode *_parent, TetrisNode &_node, Tetr
 {
     context = _ctx;
     parent = _parent;
-    node = _node;
+    node = &_ctx->nodes[static_cast<int>(_node.type)];
     map = _map;
     nexts = _parent->nexts;
     nextIndex = _nextIndex;
@@ -720,10 +727,11 @@ TreeNode::TreeNode(TreeContext *_ctx, TreeNode *_parent, TetrisNode &_node, Tetr
 
 void TreeNode::printInfoReverse(TetrisMap &map_,    TreeNode *_test = nullptr)
 {
+    Tool::printMap(map_);
     TreeNode *test = _test == nullptr ? this : _test;
     context->test = true;
     while (test != nullptr) {
-        qDebug() << Tool::printType(test->node.type);
+        qDebug() << Tool::printType(test->node->type);
         Tool::printMap(test->map);
         test = test->parent;
     }
@@ -735,20 +743,15 @@ void  TreeNode::search(bool hold_opposite)
         search_hold();
         return;
     }
-
-    if (land_point.size() == 0) {
-        land_point.append(node);
-        auto land_points = TetrisBot::search(node, map);
-        for (auto &i_node : land_points) {
-            auto next_node = TetrisNode{(nextIndex == nexts->size() ? Piece::None : nexts->at(nextIndex))};
-            auto map_ = map;
-            auto clear = i_node.attach(map_);
-            auto  status_ = TetrisBot::get(TetrisBot::evalute(i_node, map_, clear), this->evalParm.status, hold, &context->nexts, nextIndex + 1);
-            EvalParm evalParm_ = { i_node, clear, status_.value, status_};
-            auto *new_tree = new TreeNode{context, this, next_node, map_, nextIndex + 1, hold, bool(false ^ hold_opposite), evalParm_};
-            new_tree->isHoldLock = isHoldLock;
-            children.append(new_tree);
-        }
+    for (auto &i_node : TetrisBot::search(*node, map)) {
+        auto next_node = TetrisNode{(nextIndex == nexts->size() ? Piece::None : nexts->at(nextIndex))};
+        auto map_ = map;
+        auto clear = i_node.attach(map_);
+        auto  status_ = TetrisBot::get(TetrisBot::evalute(i_node, map_, clear), this->evalParm.status, hold, &context->nexts, nextIndex + 1);
+        EvalParm evalParm_ = { i_node, clear,  status_};
+        auto *new_tree = new TreeNode{context, this, next_node, map_, nextIndex + 1, hold, bool(false ^ hold_opposite), evalParm_};
+        new_tree->isHoldLock = isHoldLock;
+        children.append(new_tree);
     }
 }
 
@@ -758,62 +761,52 @@ void TreeNode::search_hold(bool op, bool noneFirstHold)
         auto  hold_save = hold;
         auto nexts_save = nexts->takeFirst();
         if (hold == Piece::None) {
-            hold = node.type;
-            node = TetrisNode{nexts_save};
+            hold = node->type;
+            node = & context->nodes[static_cast<int>(nexts_save)];
             search_hold(true, true);
         }
-        node = TetrisNode{hold};
+        node = & context->nodes[static_cast<int>(hold)];
         hold = hold_save;
         nexts->push_front(nexts_save);
         return;
     }
-    if (node.type == hold) {
-        if (land_point.size() == 0) {
-            land_point.append(node);
-            auto land_points = TetrisBot::search(node, map);
-            for (auto &i_node : land_points) {
-                auto next_node = TetrisNode{(nextIndex == nexts->size() ? Piece::None : nexts->at(nextIndex))};
-                auto map_ = map;
-                auto clear = i_node.attach(map_);
-                auto  status_ = TetrisBot::get(TetrisBot::evalute(i_node, map_, clear), this->evalParm.status, hold, &context->nexts, nextIndex + 1);
-                EvalParm evalParm_ = { i_node, clear, status_.value, status_};
-                auto *new_tree = new TreeNode{context, this, next_node, map_, nextIndex + 1, hold, bool(false), evalParm_};
-                new_tree->isHoldLock = true;
-                children.append(new_tree);
-            }
+    if (node->type == hold) {
+        for (auto &i_node :  TetrisBot::search(*node, map)) {
+            auto next_node = TetrisNode{(nextIndex == nexts->size() ? Piece::None : nexts->at(nextIndex))};
+            auto map_ = map;
+            auto clear = i_node.attach(map_);
+            auto  status_ = TetrisBot::get(TetrisBot::evalute(i_node, map_, clear), this->evalParm.status, hold, &context->nexts, nextIndex + 1);
+            EvalParm evalParm_ = { i_node, clear, status_};
+            auto *new_tree = new TreeNode{context, this, next_node, map_, nextIndex + 1, hold, bool(false), evalParm_};
+            new_tree->isHoldLock = true;
+            children.append(new_tree);
         }
-    } else if (node.type != hold) {
+    } else if (node->type != hold) {
         auto hold_node = TetrisNode{hold};
-        if (land_point.size() == 0) {
-            land_point.append(node);
-            land_point.append(hold_node);
-            auto land_points = TetrisBot::search(node, map);
-            for (auto &i_node : land_points) {
-                auto next_node = TetrisNode{(nextIndex == nexts->size() ? Piece::None : nexts->at(nextIndex))};
-                auto map_ = map;
-                auto clear = i_node.attach(map_);
-                auto  status_ = TetrisBot::get(TetrisBot::evalute(i_node, map_, clear), this->evalParm.status, hold, &context->nexts, nextIndex + 1);
-                EvalParm evalParm_ = { i_node, clear, status_.value, status_};
-                auto *new_tree = new TreeNode{context, this, next_node, map_, nextIndex + 1, hold, bool(op ^ false), evalParm_};
-                if (noneFirstHold)
-                    new_tree->nexts = & context->noneHoldFirstNexts;
-                new_tree->isHoldLock = true;
-                children.append(new_tree);
-            }
-
-            auto hold_land_points = TetrisBot::search(hold_node, map);
-            for (auto &i_node :  hold_land_points) {
-                auto next_node = TetrisNode{(nextIndex == nexts->size() ? Piece::None : nexts->at(nextIndex))};
-                auto map_ = map;
-                auto clear = i_node.attach(map_);
-                auto  status_ = TetrisBot::get(TetrisBot::evalute(i_node, map_, clear), this->evalParm.status, node.type, &context->nexts, nextIndex + 1);
-                EvalParm evalParm_ = { i_node, clear, status_.value, status_};
-                auto *new_tree = new TreeNode{context, this, next_node, map_, nextIndex + 1, node.type, bool(op ^ true), evalParm_};
-                if (noneFirstHold)
-                    new_tree->nexts = & context->noneHoldFirstNexts;
-                new_tree->isHoldLock = true;
-                children.append(new_tree);
-            }
+        for (auto &i_node : TetrisBot::search(*node, map)) {
+            auto next_node = TetrisNode{(nextIndex == nexts->size() ? Piece::None : nexts->at(nextIndex))};
+            auto map_ = map;
+            auto clear = i_node.attach(map_);
+            auto  status_ = TetrisBot::get(TetrisBot::evalute(i_node, map_, clear), this->evalParm.status, hold, &context->nexts, nextIndex + 1);
+            EvalParm evalParm_ = { i_node, clear,  status_};
+            auto *new_tree = new TreeNode{context, this, next_node, map_, nextIndex + 1, hold, bool(op ^ false), evalParm_};
+            if (noneFirstHold)
+                new_tree->nexts = & context->noneHoldFirstNexts;
+            new_tree->isHoldLock = true;
+            children.append(new_tree);
+        }
+        for (auto &i_node :  TetrisBot::search(hold_node, map)) {
+            auto next_node = TetrisNode{(nextIndex == nexts->size() ? Piece::None : nexts->at(nextIndex))};
+            auto map_ = map;
+            auto clear = i_node.attach(map_);
+            auto  status_ = TetrisBot::get(TetrisBot::evalute(i_node, map_, clear),
+                                           this->evalParm.status, node->type, &context->nexts, nextIndex + 1);
+            EvalParm evalParm_ = { i_node, clear, status_};
+            auto *new_tree = new TreeNode{context, this, next_node, map_, nextIndex + 1, node->type, bool(op ^ true), evalParm_};
+            if (noneFirstHold)
+                new_tree->nexts = & context->noneHoldFirstNexts;
+            new_tree->isHoldLock = true;
+            children.append(new_tree);
         }
     }
 }
@@ -847,19 +840,20 @@ void  TreeNode::run()
     auto prune_hold = ++context->width;
     auto prune_hold_max = prune_hold * 3;
     while (--i > 0) {
-        auto level_prune_hold = qFloor((prune_hold_max) * (next_length_max - i) / next_length_max) + prune_hold;
-        auto _deepIndex = i;
-        auto &levelSets = context->level[_deepIndex];
-        auto &nextLevelSets = context->level[_deepIndex - 1];
-        auto &extendedLevelSets = context->extendedLevel[_deepIndex];
+        auto level_prune_hold = std::floor((prune_hold_max) * (next_length_max - i) / next_length_max) + prune_hold;
+        auto &deepIndex = i;
+        auto &levelSets = context->level[deepIndex];
+        auto &nextLevelSets = context->level[deepIndex - 1];
+        auto &extendedLevelSets = context->extendedLevel[deepIndex];
+        if (levelSets.empty())
+            continue;
         QVector<TreeNode *> work, haole;
-        for (auto pi = 0; !levelSets.empty() && pi < (level_prune_hold - extendedLevelSets.size()); pi++) {
+        for (auto pi = 0; !levelSets.empty() && int(extendedLevelSets.size()) < level_prune_hold; pi++) {//int(extendedLevelSets.size())
             auto x = levelSets.top();
             work.append(x);
             levelSets.pop();
             extendedLevelSets.push(x);
         }
-
         auto mapFunc = [&](TreeNode  * tree) {
             tree->eval();
         };
@@ -876,15 +870,10 @@ std::tuple<TetrisNode, bool, bool> TreeNode::getBest()
     TreeNode *best = nullptr;
     best = context->level.first().top();
     QVector<TreeNode *> record{best};
-    //printInfoReverse(best->map, best);
-    //  Tool::printMap(best->map);
     while (best->parent != nullptr) {
         record.push_front(best->parent);
         best = best->parent;
     }
-
-    //qDebug("\n");
-    // qDebug() << Tool::printNode(record[1]->evalParm.land_node);
     return {record[1]->evalParm.land_node, record[1]->isHold, context->test};
 }
 

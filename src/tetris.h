@@ -108,7 +108,6 @@ public:
     int handle, botHandle = -1;
     QFutureWatcher<QVector<Oper>> watcher;
     static MyThread td;
-    //QThread td;
 
 public slots:
     void playPath();

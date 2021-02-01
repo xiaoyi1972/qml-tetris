@@ -166,14 +166,18 @@ void Tetris::keyPressEvent(QKeyEvent *event)
         QString originalText = clipboard->text();            //获取剪贴板上文本信息
         clipboard->setText(Recorder::writeStruct(record).toBase64());
     } else if (_key == Qt::Key_V) {
-        //  TetrisBot::search(tn, map);
+
         auto row = 0b1111111111;
         auto num = 0;
         num = int(randSys.rand.generate() % 10);
         row &= ~(1 << num);
-        //   }
-        memcpy(map.data, map.data + 1, (map.height - 1) * sizeof(int));
-        map.data[map.height - 1 ] = row;
+        for (auto i = 0; i < 3; i++) {
+            memcpy(map.data, map.data + 1, (map.height - 1) * sizeof(int));
+            map.data[map.height - 1 ] = row;
+            map.colorDatas.remove(0);
+            map.colorDatas.push_back(QVector<Piece>(map.width).fill(Piece::Trash));
+            map.colorDatas[map.height - 1][num] = Piece::None;
+        }
         map.update();
         passMap();
         passPiece(true);
@@ -183,6 +187,8 @@ void Tetris::keyPressEvent(QKeyEvent *event)
         QTime stopTime = QTime::currentTime();
         int elapsed = startTime.msecsTo(stopTime);
         qDebug() << "QTime.currentTime =" << elapsed << "ms" << x.size();
+    } else if (_key == Qt::Key_A) {
+        TetrisBot::evalute(tn, map, 0);
     }
 }
 
@@ -301,7 +307,7 @@ void Tetris::harddrop()
 {
     if (!isReplay)
         record.add(Oper::HardDrop, timeRecord());
-    //mutex.lock();
+    mutex.lock();
 
     holdSys.reset();
     auto dropDis = tn.getDrop(map);
@@ -334,7 +340,7 @@ void Tetris::harddrop()
     passNext();
     tn = TetrisNode{piece};
 
-//   mutex.unlock();
+    mutex.unlock();
 
     for (auto &row_i : clear) {//for dig mod
         if (((map.height - 11) + (10 - digRows)) < row_i && row_i < map.height) {
@@ -570,6 +576,7 @@ void Tetris::replayBotOperFunc()
         handle = task.setTimeOut(std::bind(&Tetris::replayBotOperFunc, this), time);
     } else {
         task.clearTimeout(handle);
+        //   tg=false;
         if (tg)
             botHandle = task.setTimeOut(std::bind(&Tetris::botCall, this), 0);
     }
@@ -636,7 +643,6 @@ void Tetris::botCall()
 void Tetris::ExampleMap()
 {
     return;
-
     auto reverseMap = [&]() {
         for (auto j = 0; j < map.height; j++) {
             if (map.data[j] == 0)

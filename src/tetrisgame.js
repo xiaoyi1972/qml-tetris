@@ -17,7 +17,7 @@ function index(column, row) {
 }
 
 class View {
-    constructor(_component) {
+    constructor(_component,_tetrisComponent) {
         this.feildLayer = _component.feildLayer
         this.background = _component.background
         this.fk = _component.active
@@ -28,6 +28,23 @@ class View {
         this.clearText=_component.clearText;
         this.board = new Array(maxIndex).fill(null)
         this.nexts = []
+        this.tetrisComponent=_tetrisComponent
+        this.fresh = this.fresh.bind(this);
+        this.hardDropFresh = this.hardDropFresh.bind(this);
+        this.freshNext = this.freshNext.bind(this);
+        this.freshHold = this.freshHold.bind(this);
+        this.startNewGame = this.startNewGame.bind(this);
+        this.mapFresh = this.mapFresh.bind(this);
+        this.init()
+    }
+
+    init(){
+        this.tetrisComponent.whl.connect(this.fresh)
+        this.tetrisComponent.harddropFresh.connect(this.hardDropFresh)
+        this.tetrisComponent.next.connect(this.freshNext)
+        this.tetrisComponent.holdFresh.connect(this.freshHold)
+        this.tetrisComponent.restartGame.connect(this.startNewGame)
+        this.tetrisComponent.mapFresh.connect(this.mapFresh)
     }
 
     startNewGame() {
