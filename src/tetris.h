@@ -8,11 +8,11 @@
 #include<functional>
 #include<keystate.h>
 #include<tetrisBase.h>
-#include <QMutex>
-#include <tetrisBot.h>
+#include<QMutex>
+#include<tetrisBot.h>
 #include<algorithm>
 #include<chrono>
-#include <QtConcurrent>
+#include<QtConcurrent>
 class MyThread: public QThread
 {
     using QThread::run;

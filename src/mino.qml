@@ -44,10 +44,10 @@ Item {
                 str = Qt.rgba(138 / 255, 43 / 255, 227 / 255)
                 break
             case Piece.L:
-                str = Qt.rgba(0 / 255, 0 / 255, 255 / 255)
+                str = Qt.rgba(255 / 255, 166 / 255, 0 / 255)
                 break
             case Piece.J:
-                str = Qt.rgba(255 / 255, 166 / 255, 0 / 255)
+                str = Qt.rgba(0 / 255, 0 / 255, 255 / 255)
                 break
             case Piece.S:
                 str = Qt.rgba(51 / 255, 204 / 255, 51 / 255)

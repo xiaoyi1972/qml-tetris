@@ -304,12 +304,17 @@ public:
 
     int attach(TetrisMap &map)
     {
+        return attach(map,pos);
+    }
+
+    int attach(TetrisMap &map,const Pos &_pos)
+    {
         auto size = mdata->size();
         for (auto i = 0; i < size; i++) {
-            auto dataI = pos.x > 0 ? mdata->at(i) << pos.x : mdata->at(i) >> std::abs(pos.x);
-            map.data[i + pos.y] |= dataI;
+            auto dataI = _pos.x > 0 ? mdata->at(i) << _pos.x : mdata->at(i) >> std::abs(_pos.x);
+            map.data[i + _pos.y] |= dataI;
             if (dataI) {
-                map.roof = std::min(pos.y + i, map.roof);
+                map.roof = std::min(_pos.y + i, map.roof);
             }
         }
         for (int x = 0; x < size; x++)

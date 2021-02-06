@@ -3,10 +3,9 @@
 #include<QVector>
 #include<QSet>
 #include<tetrisBase.h>
-#include <bitset>
+#include<array>
 #include<queue>
-#include<limits>
-#include <QtConcurrent>
+#include<QtConcurrent>
 
 int BitCount(int);
 namespace Tool
@@ -26,6 +25,7 @@ namespace TetrisBot
 struct Status {
     int combo = 0;
     bool b2b = false;
+    int b2bCount = 0;
     int attack = 0;
     int like = 0;
     int maxCombo = 0;
@@ -33,10 +33,10 @@ struct Status {
     double value = 0.;
     int mapRise = 0;
     int underAttack = 0;
-     bool operator<(const Status &other) const
-      {
-          return this->value < other.value;
-      }
+    bool operator<(const Status &other) const
+    {
+        return this->value < other.value;
+    }
 
 };
 
@@ -53,7 +53,7 @@ struct EvalResult {
 
 QVector<TetrisNode> search(TetrisNode &, TetrisMap &);
 auto make_path(TetrisNode &, TetrisNode &, TetrisMap &, bool)->QVector<Oper>;
-TetrisBot::EvalResult evalute(TetrisNode &, TetrisMap &, int);
+TetrisBot::EvalResult evalute(TetrisNode &, TetrisMap &, int, int);
 TetrisBot::Status get(const TetrisBot::EvalResult &, TetrisBot::Status &, Piece, QVector<Piece> *, int);
 }
 
@@ -62,24 +62,26 @@ class CNP;
 class TreeContext
 {
 public:
-    TreeContext();
+    TreeContext() {};
     ~TreeContext();
     void createRoot(TetrisNode &, TetrisMap &, QVector<Piece> &, Piece, int, int);
     void treeDelete(TreeNode *);
     void run();
     std::tuple<TetrisNode, bool, bool>getBest();
+    static QVector<TetrisNode> nodes;
+    static std::array<int, 13> comboTable;
 private:
     friend class TreeNode;
     using treeQueue = std::priority_queue<TreeNode *, std::vector<TreeNode *>, CNP>;
-    QVector<TetrisNode> nodes;
     QVector < treeQueue>level; //保存每一个等级层
     QVector < treeQueue>extendedLevel; //保存每一个等级层
     QVector<Piece>nexts, noneHoldFirstNexts; //预览队列
     int width = 0;
-    QVector<double> width_cache;
+//   QVector<double> width_cache;
     bool isOpenHold = true;
     TreeNode *root = nullptr;
     bool test = false;
+    int tCount = 0;
 };
 
 class CNP
@@ -101,6 +103,7 @@ public:
     TreeNode() {}
     TreeNode(TreeContext *, TreeNode *, TetrisNode &, TetrisMap &, int, Piece, bool,  EvalParm &);
     void printInfoReverse(TetrisMap &, TreeNode *);
+    TreeNode* generateChildNode(TetrisNode &, bool, Piece, bool);
     void search(bool hold_opposite = false);
     void search_hold(bool op = false, bool noneFirstHold = false);
     bool eval();
