@@ -451,46 +451,51 @@ TetrisBot::EvalResult TetrisBot::evalute(TetrisNode &lp, TetrisMap &map, int cle
     auto tspinDetect = [&]() {
         bool finding2 = true;
         bool finding3 = true;
-        auto loopMap = map;
-        //    int tCount = 0;
+        auto *loopMap = &map;
 
 fanhui:
-        for (int y = loopMap.roof; (finding2 || finding3) && y < loopMap.height; ++y) {
-            auto y0 = loopMap.data[y];
-            auto y1 = y - 1 > -1 ? loopMap.data[y - 1] : 0;
-            auto y2 = y - 2 > -1 ? loopMap.data[y - 2] : 0;
-            auto y3 = y - 3 > -1 ? loopMap.data[y - 3] : 0;
-            auto y4 = y - 4 > -1 ? loopMap.data[y - 4] : 0;
-            for (int x = 0; finding2 && x < loopMap.width - 2 ; ++x) {
+        for (int y = loopMap->roof; (finding2 || finding3) && y < loopMap->height; ++y) {
+            auto y0 = loopMap->data[y];
+            auto y1 = y - 1 > -1 ? loopMap->data[y - 1] : 0;
+            auto y2 = y - 2 > -1 ? loopMap->data[y - 2] : 0;
+            auto y3 = y - 3 > -1 ? loopMap->data[y - 3] : 0;
+            auto y4 = y - 4 > -1 ? loopMap->data[y - 4] : 0;
+            for (int x = 0; finding2 && x < loopMap->width - 2 ; ++x) {
                 if (((y0 >> x & 7) == 5) && ((y1 >> x & 7) == 0)) {
-                    if (BitCount(y0) == loopMap.width - 1) {
+                    if (BitCount(y0) == loopMap->width - 1) {
                         evalResult.t2Value += 1;
-                        if (BitCount(y1) == loopMap.width - 3) {
+                        if (BitCount(y1) == loopMap->width - 3) {
                             evalResult.t2Value += 2;
                             if (((y2 >> x & 7) == 4 || (y2 >> x & 7) == 1)) {
                                 evalResult.t2Value += 2;
                                 evalResult.t2Value = std::min(5, evalResult.t2Value);
                                 finding2 = false;
-                                auto *virtualNode=&TreeContext::nodes[static_cast<int>(Piece::T)];
-                                virtualNode->attach(loopMap, Pos{x, y - 2});
+                                auto *virtualNode = &TreeContext::nodes[static_cast<int>(Piece::T)];
+                                if (loopMap != &map)
+                                    delete loopMap;
+                                loopMap = nullptr;
+                                loopMap = new TetrisMap{map};
+                                virtualNode->attach(*loopMap, Pos{x, y - 2});
                                 if (tCount++ < 1) {
                                     goto fanhui;
                                 }
+                            } else if (((y2 >> x & 7) >> 1)) {
+                                evalResult.t2Value = 0;
                             }
                         }
                     }
                 }
             }
-            for (int x = 0; finding3 && x < loopMap.width - 2; ++x) {
-                if ((y0 >> x & 7) == 3 && (y1 >> x & 7) == 1 && x < loopMap.width - 3) {
+            for (int x = 0; finding3 && x < loopMap->width - 2; ++x) {
+                if ((y0 >> x & 7) == 3 && (y1 >> x & 7) == 1 && x < loopMap->width - 3) {
                     auto value = 0;
-                    if (BitCount(y0) == loopMap.width - 1) {
+                    if (BitCount(y0) == loopMap->width - 1) {
                         value += 1;
-                        if (BitCount(y1) == loopMap.width - 2) {
+                        if (BitCount(y1) == loopMap->width - 2) {
                             value += 1;
                             if ((y2 >> x & 7) == 3 && (y3 >> x & 7) == 0) {
                                 value += 2;
-                                if (BitCount(y2) == loopMap.width - 1) {
+                                if (BitCount(y2) == loopMap->width - 1) {
                                     value += 2;
                                     if ((y3 >> x & 7) == 0) {
                                         value += 1;
@@ -512,13 +517,13 @@ fanhui:
 
                 else if ((y0 >> x & 7) == 6 && (y1 >> x & 7) == 4 && x > 0) {
                     auto value = 0;
-                    if (BitCount(y0) == loopMap.width - 1) {
+                    if (BitCount(y0) == loopMap->width - 1) {
                         value += 1;
-                        if (BitCount(y1) == loopMap.width - 2) {
+                        if (BitCount(y1) == loopMap->width - 2) {
                             value += 1;
                             if ((y2 >> x & 7) == 6 && (y3 >> x & 7) == 0) {
                                 value += 2;
-                                if (BitCount(y2) == loopMap.width - 1) {
+                                if (BitCount(y2) == loopMap->width - 1) {
                                     value += 2;
                                     if ((y3 >> x & 7) == 0) {
                                         value += 1;
@@ -539,6 +544,9 @@ fanhui:
                 }
             }
         }
+        if (loopMap != &map)
+            delete loopMap;
+        loopMap = nullptr;
 
         return 0;
     };
@@ -695,13 +703,20 @@ void TreeContext::createRoot(TetrisNode &_node, TetrisMap &_map, QVector<Piece> 
 {
     nexts = dp;
     noneHoldFirstNexts = dp.mid(1, -1);
-    auto depth = dp.size() + 1 + (_hold == Piece::None ?  -1 : 0) + 1;
+    auto depth = dp.size() + 1 + ((_hold == Piece::None && isOpenHold) ?  -1 : 0); // + 1;
     level.resize(depth);
     extendedLevel.resize(depth);
-    tCount = int (_hold == Piece::T);
+    tCount = int (_hold == Piece::T && isOpenHold);
     for (const auto &i : dp) {
         if (i == Piece::T)
             tCount++;
+    }
+    if (depth > 0) {
+        double ratio = 1.5;
+        while (width_cache.size() < depth - 1) {
+            width_cache.append(std::pow(width_cache.size() + 2, ratio));
+        }
+        div_ratio = 2 / *std::max_element(width_cache.begin(), width_cache.end());
     }
     tCount = std::min(0, --tCount);
     TreeNode *tree = new TreeNode;
@@ -839,12 +854,10 @@ bool TreeNode::eval()
 
 void  TreeNode::run()
 {
-    auto next_length_max = nexts->size() + 1;
-    if (context->isOpenHold && hold == Piece::None)
-        --next_length_max;
-    auto  i = next_length_max;
+    auto previewLength = context->level.size() - 1;
+    auto  i = previewLength + 1;
     if (context->width == 0) {
-        auto &firstLevel = context->level[next_length_max - 1];
+        auto &firstLevel = context->level[previewLength];
         if (this->eval())
             for (auto child : this->children)
                 firstLevel.push(child);
@@ -852,22 +865,22 @@ void  TreeNode::run()
     } else
         context->width += 1;
 
-    auto prune_hold = ++context->width;
-    auto prune_hold_max = prune_hold * 3;
-    i += 1;
+//    auto pruneHold = ++context->width;
+//   auto pruneHoldMax = pruneHold * 3;
+
     while (--i > 0) {
-        auto level_prune_hold = std::floor((prune_hold_max) * (/*next_length_max - */i) / next_length_max) + prune_hold;
+        auto levelPruneHold = std::max<size_t>(1, size_t(context->width_cache[i - 1] * context->width *  context->div_ratio));
         auto &deepIndex = i;
         auto &levelSets = context->level[deepIndex];
         auto &nextLevelSets = context->level[deepIndex - 1];
         auto &extendedLevelSets = context->extendedLevel[deepIndex];
-        if (i == next_length_max) {
-            level_prune_hold = levelSets.size();
-        }
+        // qDebug("levelSets[%d]:%d length:%d lph:%d", deepIndex, levelSets.size(), context->level.size(),levelPruneHold);
+        if (i == previewLength)
+            levelPruneHold = levelSets.size();
         if (levelSets.empty())
             continue;
-        QVector<TreeNode *> work, haole;
-        for (auto pi = 0; !levelSets.empty() && int(extendedLevelSets.size()) < level_prune_hold; pi++) { //int(extendedLevelSets.size())
+        QVector<TreeNode *> work;
+        for (auto pi = 0; !levelSets.empty() && extendedLevelSets.size() < levelPruneHold; pi++) { //int(extendedLevelSets.size())
             auto x = levelSets.top();
             work.append(x);
             levelSets.pop();

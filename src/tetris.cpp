@@ -577,7 +577,7 @@ void Tetris::replayBotOperFunc()
         handle = task.setTimeOut(std::bind(&Tetris::replayBotOperFunc, this), time);
     } else {
         task.clearTimeout(handle);
-        //  tg = false;
+        // tg = false;
         if (tg)
             botHandle = task.setTimeOut(std::bind(&Tetris::botCall, this), 0);
     }
@@ -635,7 +635,7 @@ QVector<Oper> Tetris::caculateBot(TetrisNode &start, int limitTime)
 
 void Tetris::botCall()
 {
-    auto limitTime = 120;
+    auto limitTime = 140;
     recordPath.clear();
     QFuture<QVector<Oper>> future = QtConcurrent::run(this, &Tetris::caculateBot, tn, limitTime);
     watcher.setFuture(future);

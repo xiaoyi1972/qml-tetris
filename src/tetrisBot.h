@@ -77,10 +77,11 @@ private:
     QVector < treeQueue>extendedLevel; //保存每一个等级层
     QVector<Piece>nexts, noneHoldFirstNexts; //预览队列
     int width = 0;
-//   QVector<double> width_cache;
+   QVector<double> width_cache;
     bool isOpenHold = true;
     TreeNode *root = nullptr;
     bool test = false;
+    double  div_ratio;
     int tCount = 0;
 };
 
