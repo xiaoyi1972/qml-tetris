@@ -577,7 +577,7 @@ void Tetris::replayBotOperFunc()
         handle = task.setTimeOut(std::bind(&Tetris::replayBotOperFunc, this), time);
     } else {
         task.clearTimeout(handle);
-        // tg = false;
+      //  tg = false;
         if (tg)
             botHandle = task.setTimeOut(std::bind(&Tetris::botCall, this), 0);
     }

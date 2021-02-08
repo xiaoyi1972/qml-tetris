@@ -367,7 +367,7 @@ TetrisBot::EvalResult TetrisBot::evalute(TetrisNode &lp, TetrisMap &map, int cle
         return value;
     };
 
-    auto  eval_map = [&]() {
+    auto  eval_map = [](TetrisMap & map) {
         struct {
             int colTrans;
             int rowTrans;
@@ -449,11 +449,12 @@ TetrisBot::EvalResult TetrisBot::evalute(TetrisNode &lp, TetrisMap &map, int cle
 
 
     auto tspinDetect = [&]() {
-        bool finding2 = true;
-        bool finding3 = true;
+        bool finding2, finding3;
         auto *loopMap = &map;
-
+        auto tc = 0;
 fanhui:
+        finding2 = true;
+        finding3 = true;
         for (int y = loopMap->roof; (finding2 || finding3) && y < loopMap->height; ++y) {
             auto y0 = loopMap->data[y];
             auto y1 = y - 1 > -1 ? loopMap->data[y - 1] : 0;
@@ -466,17 +467,18 @@ fanhui:
                         evalResult.t2Value += 1;
                         if (BitCount(y1) == loopMap->width - 3) {
                             evalResult.t2Value += 2;
-                            if (((y2 >> x & 7) == 4 || (y2 >> x & 7) == 1)) {
+                            if (((y2 >> x & 7) == 4 || (y2 >> x & 7) == 1) && ((y3 >> x & 7) >> 1 == 0)) {
                                 evalResult.t2Value += 2;
-                                evalResult.t2Value = std::min(5, evalResult.t2Value);
+                                evalResult.t2Value = std::min(6, evalResult.t2Value);
                                 finding2 = false;
                                 auto *virtualNode = &TreeContext::nodes[static_cast<int>(Piece::T)];
-                                if (loopMap != &map)
-                                    delete loopMap;
-                                loopMap = nullptr;
-                                loopMap = new TetrisMap{map};
+                                if (!tc) {
+                                    loopMap = nullptr;
+                                    loopMap = new TetrisMap{map};
+                                }
                                 virtualNode->attach(*loopMap, Pos{x, y - 2});
-                                if (tCount++ < 1) {
+                                if (tc++ < tCount) {
+                                    //evalResult.t2Value %= 5;
                                     goto fanhui;
                                 }
                             } else if (((y2 >> x & 7) >> 1)) {
@@ -544,14 +546,16 @@ fanhui:
                 }
             }
         }
-        if (loopMap != &map)
-            delete loopMap;
-        loopMap = nullptr;
 
-        return 0;
+        auto valueX = eval_map(*loopMap);
+        if (loopMap != &map) {
+            delete loopMap;
+        }
+        loopMap = nullptr;
+        return valueX;
     };
 
-    evalResult.value = eval_map() +  tspinDetect();
+    evalResult.value = /*eval_map(map) +*/  tspinDetect();
     evalResult.clear = clear;
     evalResult.typeTSpin = lp.typeTSpin;
     evalResult.safe = 999;
@@ -581,7 +585,7 @@ TetrisBot::Status TetrisBot::get(const TetrisBot::EvalResult &evalResult, Tetris
         }
         result.combo = 0;
         if (status.underAttack > 0) {
-            result.mapRise += std::max(0, qAbs(status.underAttack - status.attack));
+            result.mapRise += std::max(0, std::abs(status.underAttack - status.attack));
             if (result.mapRise >= evalResult.safe) {
                 result.value -= 99999;
             }
@@ -706,7 +710,7 @@ void TreeContext::createRoot(TetrisNode &_node, TetrisMap &_map, QVector<Piece> 
     auto depth = dp.size() + 1 + ((_hold == Piece::None && isOpenHold) ?  -1 : 0); // + 1;
     level.resize(depth);
     extendedLevel.resize(depth);
-    tCount = int (_hold == Piece::T && isOpenHold);
+    tCount = int (_hold == Piece::T && isOpenHold)+int(_node.type==Piece::T);
     for (const auto &i : dp) {
         if (i == Piece::T)
             tCount++;
@@ -714,11 +718,11 @@ void TreeContext::createRoot(TetrisNode &_node, TetrisMap &_map, QVector<Piece> 
     if (depth > 0) {
         double ratio = 1.5;
         while (width_cache.size() < depth - 1) {
-            width_cache.append(std::pow(width_cache.size() + 2, ratio));
+            width_cache.push_front(std::pow(width_cache.size() + 2, ratio));
         }
         div_ratio = 2 / *std::max_element(width_cache.begin(), width_cache.end());
     }
-    tCount = std::min(0, --tCount);
+    tCount = std::max(0, --tCount);
     TreeNode *tree = new TreeNode;
     tree->context = this;
     tree->nexts = &nexts;
@@ -906,6 +910,9 @@ std::tuple<TetrisNode, bool, bool> TreeNode::getBest()
         record.push_front(best->parent);
         best = best->parent;
     }
+    qDebug() << "\n\n\n";
+    Tool::printMap(record[1]->map);
+
     return {record[1]->evalParm.land_node, record[1]->isHold, context->test};
 }
 
