@@ -36,40 +36,44 @@ public:
         count = 0;
         data = new int[height];
         std::memset(data, 0, height * sizeof(int));
+        std::memset(top, _height, 32 * sizeof(char));
     }
 
-    TetrisMap(const TetrisMap &A)
+    TetrisMap(const TetrisMap &other)
     {
-        width = A.width;
-        height = A.height;
-        roof = A.roof;
-        count = A.count;
+        width = other.width;
+        height = other.height;
+        roof = other.roof;
+        count = other.count;
         data = new int[height];
-        std::memcpy(data, A.data, height * sizeof(int));
+        std::memcpy(data, other.data, height * sizeof(int));
+        std::memcpy(top, other.top, 32 * sizeof(char));
     }
 
-    void operator=(TetrisMap &A)
+    void operator=(TetrisMap &other)
     {
-        width = A.width;
-        height = A.height;
-        roof = A.roof;
-        count = A.count;
+        width = other.width;
+        height = other.height;
+        roof = other.roof;
+        count = other.count;
         delete [] data;
         data = nullptr;
         data = new int[height];
-        std::memcpy(data, A.data, height * sizeof(int));
+        std::memcpy(data, other.data, height * sizeof(int));
+        std::memcpy(top, other.top, 32 * sizeof(char));
     }
 
-    void operator=(TetrisMap &&A)
+    void operator=(TetrisMap &&other)
     {
-        width = A.width;
-        height = A.height;
-        roof = A.roof;
-        count = A.count;
+        width = other.width;
+        height = other.height;
+        roof = other.roof;
+        count = other.count;
         delete [] data;
         data = nullptr;
         data = new int[height];
-        std::memcpy(data, A.data, height * sizeof(int));
+        std::memcpy(data, other.data, height * sizeof(int));
+        std::memcpy(top, other.top, 32 * sizeof(char));
     }
 
     ~TetrisMap()
@@ -91,7 +95,15 @@ public:
         }
         count -= change.size() * width;
         roof += change.size();
+        for (auto i = 0; i < width; i++) {
+            top[i] += (top[i] < height ? change.size() : 0);
+        }
         return change;
+    }
+
+    int full(int x, int y) const
+    {
+        return  operator()(x, y);
     }
 
     int operator()(int x, int y) const
@@ -104,61 +116,35 @@ public:
     int width, height;//宽 高
     int roof, count; //最高位置 块数
     int *data = nullptr; //数据
+    char top[32] = {}; //每列高度
 };
-
 
 class TetrisMapEx: public TetrisMap
 {
 public:
     using colorDatasType = QVector<QVector<Piece>>;
     using pieceArrType = QVector<Piece>;
-    TetrisMapEx(int _width = 0, int _height = 0)
+    TetrisMapEx(int _width = 0, int _height = 0): TetrisMap(_width, _height)
     {
-        width = _width;
-        height = _height;
-        roof = _height;
-        count = 0;
-        data = new int[height];
-        std::memset(data, 0, height * sizeof(int));
         colorDatas.resize(height);
         colorDatas.fill(pieceArrType(width).fill(Piece::None));
     }
 
-    TetrisMapEx(const TetrisMapEx &A)
+    TetrisMapEx(const TetrisMapEx &other): TetrisMap(other)
     {
-        width = A.width;
-        height = A.height;
-        roof = A.roof;
-        count = A.count;
-        data = new int[height];
-        std::memcpy(data, A.data, height * sizeof(int));
-        colorDatas = A.colorDatas;
+        colorDatas = other.colorDatas;
     }
 
-    void operator=(TetrisMapEx &A)
+    void operator=(TetrisMapEx &other)
     {
-        width = A.width;
-        height = A.height;
-        roof = A.roof;
-        count = A.count;
-        delete [] data;
-        data = nullptr;
-        data = new int[height];
-        std::memcpy(data, A.data, height * sizeof(int));
-        colorDatas = A.colorDatas;
+        TetrisMap::operator=(other);
+        colorDatas = other.colorDatas;
     }
 
-    void operator=(TetrisMapEx &&A)
+    void operator=(TetrisMapEx &&other)
     {
-        width = A.width;
-        height = A.height;
-        roof = A.roof;
-        count = A.count;
-        delete [] data;
-        data = nullptr;
-        data = new int[height];
-        std::memcpy(data, A.data, height * sizeof(int));
-        colorDatas = A.colorDatas;
+        TetrisMap::operator=(std::move(other));
+        colorDatas = other.colorDatas;
     }
 
     ~TetrisMapEx()
@@ -169,19 +155,11 @@ public:
 
     auto clear()
     {
-        QVector<int> change;
-        auto full = (1 << width) - 1;
-        for (auto i = 0; i < height ; i++) {
-            if (data[i] == full) {
-                change.append(i);
-                std::memcpy(data + 1, data, i * sizeof(int));
-                data[0] = 0;
-                colorDatas.remove(i);
-                colorDatas.push_front(pieceArrType(width).fill(Piece::None));
-            }
+        QVector<int> change = TetrisMap::clear();
+        for (const auto &i : change) {
+            colorDatas.remove(i);
+            colorDatas.push_front(pieceArrType(width).fill(Piece::None));
         }
-        count -= change.size() * width;
-        roof += change.size();
         return change;
     }
 
@@ -297,6 +275,7 @@ public:
                     map.count++;
                     change.append(Pos{pos.y + y, pos.x + x});
                     map.colorDatas[pos.y + y][pos.x + x] = type;
+                    map.top[pos.x + x] = std::min<char>(pos.y + y, map.top[pos.x + x]);
                 }
             }
         return {change, map.clear()};
@@ -304,10 +283,10 @@ public:
 
     int attach(TetrisMap &map)
     {
-        return attach(map,pos);
+        return attach(map, pos);
     }
 
-    int attach(TetrisMap &map,const Pos &_pos)
+    int attach(TetrisMap &map, const Pos &_pos)
     {
         auto size = mdata->size();
         for (auto i = 0; i < size; i++) {
@@ -320,6 +299,7 @@ public:
         for (int x = 0; x < size; x++)
             for (int y = 0; y < size; y++) {
                 if (full(y, x)) {
+                    map.top[_pos.x + x] = std::min<char>(_pos.y + y, map.top[_pos.x + x]);
                     map.count++;
                 }
             }

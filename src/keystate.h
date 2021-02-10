@@ -2,6 +2,7 @@
 #define KEYSTATE_H
 #include<functional>
 #include<QVector>
+#include<QMutex>
 class Tetris;
 class Task;
 class KeyState
@@ -15,10 +16,12 @@ public:
     void moveCall(int delay);//加速延迟
     void stop();//取消
     void switchStop();//连续方向取消
+    int funcChecked();//防抖arr
+
     std::function<void()> func;
     std::function<void()> endFunc;
-    bool isDown, noDas, press = false, das;
-    int dasHandle, arrHandle;
+    bool isDown, noDas, press = false, das = false;
+    int dasHandle = -1, arrHandle = -1;
     int switchStopFlag = false;
     QString name;
     Tetris *tetris = nullptr;

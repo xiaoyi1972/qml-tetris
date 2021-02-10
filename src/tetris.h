@@ -8,8 +8,8 @@
 #include<functional>
 #include<keystate.h>
 #include<tetrisBase.h>
-#include<QMutex>
 #include<tetrisBot.h>
+#include<QMutex>
 #include<algorithm>
 #include<chrono>
 #include<QtConcurrent>
@@ -23,20 +23,20 @@ public: MyThread(QObject *parent = 0): QThread(parent) {}
 class Task: public QObject
 {
     Q_OBJECT
-
 public slots:
     int setTimeOut(const std::function<void()> &, int delay);
-    int setInterval(const std::function<void()> &, int delay);
+    int setInterval(const std::function<int()> &, int delay);
     void test(QThread *);
-    void clearTimeout(int &);
-    void clearInterval(int &);
+    void clearTimeout(int );
+    void clearInterval(int );
     void killTimer_(int);
     int startTimer_(int);
     void timerEvent(QTimerEvent *);
+
 public:
     Task() = default;
     void back(QThread *);
-    QHash<int, std::function<void()>> m_intervalHash;
+    QHash<int, std::function<int()>> m_intervalHash;
     QHash<int, std::function<void()>> m_timeoutHash;
 };
 
@@ -54,7 +54,7 @@ public:
         int holdKey = Qt::Key_C;
         int restartKey = Qt::Key_R;
         int dasDelay = 65;
-        int arrDelay = 12;
+        int arrDelay = 17;
         int softdropDelay = 8;
         int replay = Qt::Key_Q;
     };
@@ -90,7 +90,7 @@ public:
     void replayFunc(); //录像重播
     void replayBotOperFunc(); //bot操作播放
     int timeRecord();//录像操作时间点
-    void toFresh(Piece &, QVector<Pos> &, QVector<int> &, const std::tuple<bool, bool, int> &);
+    void toFresh(Piece &, QVector<Pos> &, QVector<int> &, const std::tuple<bool, bool, int> &);//刷新状态信息
     QVector<Oper> caculateBot(TetrisNode &, int); //bot计算
     void botCall();//bot调用执行操作
     void ExampleMap();//使用地图;

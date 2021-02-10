@@ -6,6 +6,7 @@
 #include<array>
 #include<queue>
 #include<QtConcurrent>
+#include<limits>
 
 int BitCount(int);
 namespace Tool
@@ -17,8 +18,6 @@ QString printPath(QVector<Oper> &);
 QString printOper(Oper &);
 void sleepTo(int msec);
 }
-
-
 
 namespace TetrisBot
 {
@@ -58,7 +57,7 @@ TetrisBot::Status get(const TetrisBot::EvalResult &, TetrisBot::Status &, Piece,
 }
 
 class TreeNode;
-class CNP;
+class TreeNodeCompare;
 class TreeContext
 {
 public:
@@ -72,12 +71,12 @@ public:
     static std::array<int, 13> comboTable;
 private:
     friend class TreeNode;
-    using treeQueue = std::priority_queue<TreeNode *, std::vector<TreeNode *>, CNP>;
+    using treeQueue = std::priority_queue<TreeNode *, std::vector<TreeNode *>, TreeNodeCompare>;
     QVector < treeQueue>level; //保存每一个等级层
     QVector < treeQueue>extendedLevel; //保存每一个等级层
     QVector<Piece>nexts, noneHoldFirstNexts; //预览队列
     int width = 0;
-   QVector<double> width_cache;
+    QVector<double> width_cache;
     bool isOpenHold = true;
     TreeNode *root = nullptr;
     bool test = false;
@@ -85,10 +84,10 @@ private:
     int tCount = 0;
 };
 
-class CNP
+class TreeNodeCompare
 {
 public:
-    bool operator()(TreeNode *const &a, TreeNode *const &b)const ;
+    bool operator()(TreeNode *const &a, TreeNode *const &b) const ;
 };
 
 class TreeNode
@@ -97,20 +96,20 @@ public:
     struct EvalParm {
         TetrisNode land_node;
         int clear = 0;
-        // double value = 0.;
         TetrisBot::Status status;
     };
-
     TreeNode() {}
     TreeNode(TreeContext *, TreeNode *, TetrisNode &, TetrisMap &, int, Piece, bool,  EvalParm &);
     void printInfoReverse(TetrisMap &, TreeNode *);
-    TreeNode* generateChildNode(TetrisNode &, bool, Piece, bool);
+    TreeNode *generateChildNode(TetrisNode &, bool, Piece, bool);
     void search(bool hold_opposite = false);
     void search_hold(bool op = false, bool noneFirstHold = false);
     bool eval();
     void  run();
     std::tuple<TetrisNode, bool, bool> getBest();
-
+    friend class TreeContext;
+    friend class TreeNodeCompare ;
+private:
     TreeNode *parent = nullptr;  //父节点
     TreeContext *context = nullptr; //公用的层次对象
     QVector<Piece> *nexts = nullptr; //预览队列

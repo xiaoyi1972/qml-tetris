@@ -34,12 +34,13 @@ bool KeyState::keyDown()
 void  KeyState::dasCall()
 {
     das = true;
-   // dasHandle = -1;
-    moveCall(tetris->keyconfig.arrDelay);
+    if (dasHandle != -1)
+        moveCall(tetris->keyconfig.arrDelay);
 }
 
 void KeyState::moveCall(int delay)
 {
+    dasHandle = -1;
     /*  if (delay ==  0)
       {
       //   endFunc();
@@ -47,7 +48,17 @@ void KeyState::moveCall(int delay)
       else*/
     {
         // func();
-        arrHandle = tetris->task.setInterval(func, delay);
+        arrHandle = tetris->task.setInterval(std::bind(&KeyState::funcChecked, this), delay);
+    }
+}
+
+int KeyState::funcChecked()
+{
+    if (das || isDown) {
+        func();
+        return 0;
+    } else {
+        return -1;
     }
 }
 
@@ -72,7 +83,10 @@ void KeyState::switchStop()
 
 void KeyState::stop()
 {
-    if (!isDown)
+    if (!isDown) {
         tetris->task.clearTimeout(dasHandle);
+        dasHandle = -1;
+    }
     tetris->task.clearInterval(arrHandle);
+    arrHandle = -1;
 }

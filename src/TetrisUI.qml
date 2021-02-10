@@ -66,6 +66,9 @@ Item {
         function playDead() {
             animationDead.start()
         }
+        function stop(){
+            animationDead.stop()
+        }
         vertexShader: "
 uniform highp mat4 qt_Matrix;
 attribute highp vec4 qt_Vertex;
@@ -140,7 +143,7 @@ gl_FragColor =vec4(tex.rgb,tex.a);
         id: shadow
         property int minoType: -1
         property var board: []
-        property int xyDuration: 50
+        property int xyDuration:50
         x: 0
         y: 0
         transformOrigin: Item.Center
@@ -202,20 +205,22 @@ gl_FragColor =vec4(tex.rgb,tex.a);
         }
     }
 
-        Column  {
-        anchors.top: displayBorder.top
-        anchors.right: root.left
-        anchors.margins: 5
-        anchors.topMargin: 0
-        spacing: 10
         Text {
+            id:holdText
+            anchors.margins: 5
+            anchors.topMargin: 0
+            anchors.top: displayBorder.top
+            anchors.right: root.left
             font.pointSize: 16
             text: "暂存"
+             horizontalAlignment: Text.AlignRightA
         }
         Mino {
+            anchors.topMargin: 10
+            anchors.top:holdText.bottom
+            anchors.right: holdText.right
             id: hold
         }
-    }
 
     ColumnLayout {
         anchors.right: root.left
@@ -225,11 +230,6 @@ gl_FragColor =vec4(tex.rgb,tex.a);
         layoutDirection: Qt.RightToLeft
         spacing: 10
 
-
-        /*Text {
-            font.pointSize: 16
-            text: "暂存"
-        }*/
         Text {
             id: effectClear
             font.pointSize: 16

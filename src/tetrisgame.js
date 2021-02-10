@@ -48,6 +48,7 @@ class View {
     }
 
     startNewGame() {
+        this.feildLayer.stop()
         this.feildLayer.range = 1
         this.shadow.opacity = 1
         this.effectClear.text=""
