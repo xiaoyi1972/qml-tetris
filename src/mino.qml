@@ -34,27 +34,13 @@ Item {
         function getTypeColor(piece) {
             let str
             switch (piece) {
-            case Piece.O:
-                str = Qt.rgba(245 / 255, 220 / 255, 0 / 255)
-                break
-            case Piece.I:
-                str = Qt.rgba(94 / 255, 158 / 255, 160 / 255)
-                break
-            case Piece.T:
-                str = Qt.rgba(138 / 255, 43 / 255, 227 / 255)
-                break
-            case Piece.L:
-                str = Qt.rgba(255 / 255, 166 / 255, 0 / 255)
-                break
-            case Piece.J:
-                str = Qt.rgba(0 / 255, 0 / 255, 255 / 255)
-                break
-            case Piece.S:
-                str = Qt.rgba(51 / 255, 204 / 255, 51 / 255)
-                break
-            case Piece.Z:
-                str = Qt.rgba(255 / 255, 0 / 255, 0 / 255)
-                break
+            case Piece.O: str = Qt.rgba(245 / 255, 220 / 255, 0 / 255); break;
+            case Piece.I: str = Qt.rgba(57 / 255, 195 / 255, 199 / 255); break;
+            case Piece.T: str = Qt.rgba(138 / 255, 43 / 255, 227 / 255); break;
+            case Piece.L: str = Qt.rgba(255 / 255, 166 / 255, 0 / 255); break;
+            case Piece.J: str = Qt.rgba(0 / 255, 0 / 255, 255 / 255); break;
+            case Piece.S: str = Qt.rgba(51 / 255, 204 / 255, 51 / 255); break;
+            case Piece.Z: str = Qt.rgba(255 / 255, 0 / 255, 0 / 255); break;
             }
             return str
         }

@@ -11,7 +11,7 @@
 #include<cmath>
 enum class Piece {Trash = -2, None = -1, O, I, T, L, J, S, Z};
 enum class Oper {None = -1, Left, Right, SoftDrop, HardDrop, Hold, Cw, Ccw, DropToBottom};
-enum class  TSpinType {None = -1, TSpinMini, TSpin};
+enum class TSpinType {None = -1, TSpinMini, TSpin};
 
 class  Pos
 {
@@ -430,8 +430,8 @@ public:
     char rotateState;
     bool mini = false, spin = false, lastRotate = false;
     TSpinType typeTSpin = TSpinType::None;
-    static QMap<Piece, QVector<data >> rotateDatas;
-    static QMap<bool, QVector<QVector<int> >> kickDatas;
+    static QMap<Piece, QVector<data>> rotateDatas;
+    static QMap<bool, QVector<data>> kickDatas;
 };
 
 

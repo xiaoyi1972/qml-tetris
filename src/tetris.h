@@ -27,8 +27,8 @@ public slots:
     int setTimeOut(const std::function<void()> &, int delay);
     int setInterval(const std::function<int()> &, int delay);
     void test(QThread *);
-    void clearTimeout(int );
-    void clearInterval(int );
+    void clearTimeout(int);
+    void clearInterval(int);
     void killTimer_(int);
     int startTimer_(int);
     void timerEvent(QTimerEvent *);
@@ -103,10 +103,11 @@ public:
     Q_INVOKABLE void passNext(bool ifForce = false);
     Q_INVOKABLE void setKeyboard(QVariantMap a);
 
-    Task task;
-    keyConfig keyconfig;
     int handle, botHandle = -1;
     QFutureWatcher<QVector<Oper>> watcher;
+
+    static keyConfig keyconfig;
+    static Task task;
     static MyThread td;
 
 public slots:
@@ -121,9 +122,9 @@ private:
     TetrisMapEx map{10, 20};
     QMutex mutex;
     Recorder record{randSys.seed}, recordPath{randSys.seed};
-    KeyState leftKey{this, std::bind(&Tetris::left, this)};
-    KeyState rightKey{this, std::bind(&Tetris::right, this)};
-    KeyState softDropKey{this, std::bind(&Tetris::softdrop, this), nullptr, true};
+    KeyState leftKey{std::bind(&Tetris::left, this)};
+    KeyState rightKey{std::bind(&Tetris::right, this)};
+    KeyState softDropKey{std::bind(&Tetris::softdrop, this), nullptr, true};
     std::chrono::time_point<std::chrono::high_resolution_clock> startTime;
     bool isReplay = false;
     QVector<int> comboTable{0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 4, 5, -1};

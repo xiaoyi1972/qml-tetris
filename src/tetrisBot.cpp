@@ -367,7 +367,7 @@ TetrisBot::EvalResult TetrisBot::evalute(TetrisNode &lp, TetrisMap &map, int cle
         return value;
     };
 
-    auto  eval_map = [](TetrisMap & map) {
+    auto  eval_map = [&evalResult](TetrisMap & map) {
         struct {
             int colTrans;
             int rowTrans;
@@ -431,18 +431,65 @@ TetrisBot::EvalResult TetrisBot::evalute(TetrisNode &lp, TetrisMap &map, int cle
             }
         }
 
+        struct {
+            int num = 0;
+            int suitNum = 0;
+            int fill = 0;
+            int index = 0;
+            int maxCount = 0;
+            void caculate(int col)
+            {
+                maxCount = (1 + col) * col / 2;
+            }
+        } fillWell;
+
+        auto getFilledRow = [&](int col) {
+            int count = 0;
+            for (int y = std::min(col, map.height - 1); y > map.roof; y--) {
+                auto &row = map.data[y];
+                if (BitCount(row) == map.width - 1) {
+                    count++;
+                } else
+                    break;
+                if (count == 4)
+                    break;
+            }
+            return count;
+        };
+
+        for (auto i = 0; i < map.width; i++) {
+            if (m.wellNum[i] > 0) {
+                if (auto filled = getFilledRow(map.top[i]); filled > 0) {
+                    if (filled > fillWell.fill) {
+                        fillWell.index = i;
+                        fillWell.fill = filled;
+                    }
+                }
+                if (i > 2 && i < map.width - 2)
+                    fillWell.suitNum++;
+                fillWell.num++;
+            }
+        }
+
+        fillWell.caculate(m.wellNum[fillWell.index]);
+
         auto value = (0.
                       - m.lowestRoof * 96
                       - m.colTrans  * 60
-                      - m.rowTrans * 120
+                      //- m.rowTrans * 120
+                      // - m.holes * 60
                       - m.holeLines * 380 * 0.88
-                      - m.wellDepth * 100
+                      // - m.wellDepth * 100
+                      - (fillWell.suitNum == 0 ? (fillWell.num == 0 ? 1000 : 100 * m.wellDepth) :
+                         (fillWell.suitNum == 1 ? fillWell.fill * -100 : 100 * (m.wellDepth - fillWell.maxCount)))
                       - m.holeDepth * 40
                      );
 
-        double rate = 32, mul = 1.0 / 4;
+
+
+        double rate = 32 * 5, mul = 1.0 / 4;
         for (auto i = m.holePosyIndex - 1; i > -1; --i, rate *= mul) {
-            value -= m.clearWidth[i] * rate;
+            value -= m.clearWidth[i]   * rate;
         }
         return value;
     };
@@ -562,8 +609,12 @@ fanhui:
         int safe = INT_MAX;
         for (auto type = 0; type < 7; type++) {
             auto *virtualNode = &TreeContext::nodes[type];
-            auto dropDis = virtualNode->getDrop(map);
-            safe = std::min(dropDis, safe);
+            if (!virtualNode->check(map))
+                safe = -1;
+            else {
+                auto dropDis = virtualNode->getDrop(map);
+                safe = std::min(dropDis, safe);
+            }
         }
         return safe;
     };
@@ -648,6 +699,7 @@ TetrisBot::Status TetrisBot::get(const TetrisBot::EvalResult &evalResult, Tetris
     if (status.b2b && !result.b2b) {
         result.like -= 2;
         result.b2bCount = 0;
+        result.cutB2b = true;
     }
 
     if (status.b2b) {
@@ -680,18 +732,13 @@ TetrisBot::Status TetrisBot::get(const TetrisBot::EvalResult &evalResult, Tetris
     result.maxCombo = std::max(result.combo, result.maxCombo);
     result.maxAttack = std::max(result.attack, result.maxAttack);
 
-    result.value += ((
-                             0.
-                             + result.maxAttack * 40
-                             + result.attack * 256  * rate
-                             + (evalResult.t2Value) * (t_expect() < 8 ? 512 : 320) * 1.5
-                             + (evalResult.safe >= 12 ? evalResult.t3Value * (t_expect() < 4 ? 10 : 8) * (result.b2b ? 512 : 256) / (6 + result.underAttack) : 0)
-                             + (result.b2b ? 512 : 0)
-                             + result.like * 64
-                             + result.b2bCount * 100
-                     ) * std::max<double>(0.05, (full_count_ - evalResult.count - result.mapRise * 10) / double(full_count_))
-                     + result.maxCombo * (result.maxCombo - 1) * 40
-                    );
+    result.value += (( 0.+ (result.cutB2b ? (0): (0.
+                                   + result.attack * 256 * rate
+                                   + result.like * 64
+                                   + (result.b2b ? 512 : 0)
+                                   + (evalResult.t2Value) * (t_expect() < 8 ? 512 : 320)  //* 1.5
+                                   //+ (evalResult.safe >= 12 ? evalResult.t3Value * (t_expect() < 4 ? 10 : 8) * (result.b2b ? 512 : 256) / (8 + result.underAttack) : 0)
+                                  ) )) * 0.5);
     return result;
 }
 
@@ -805,16 +852,18 @@ TreeNode *TreeNode::generateChildNode(TetrisNode &i_node, bool _isHoldLock, Piec
     auto next_node = TetrisNode{(nextIndex == nexts->size() ? Piece::None : nexts->at(nextIndex))};
     auto map_ = map;
     auto clear = i_node.attach(map_);
-    auto  status_ = TetrisBot::get(TetrisBot::evalute(i_node, map_, clear, context->tCount),
-                                   evalParm.status, hold, &context->nexts, nextIndex + 1);
+    auto status_ = TetrisBot::get(TetrisBot::evalute(i_node, map_, clear, context->tCount),
+                                  evalParm.status, hold, &context->nexts, nextIndex + 1);
     EvalParm evalParm_ = { i_node, clear, status_};
     auto *new_tree = new TreeNode{context, this, next_node, map_, nextIndex + 1, _hold, _isHold, evalParm_};
     new_tree->isHoldLock = _isHoldLock;
+//   if (evalParm.status.b2b && !status_.b2b) {}
+    // else
     children.append(new_tree);
     return new_tree;
 }
 
-void  TreeNode::search(bool hold_opposite)
+void TreeNode::search(bool hold_opposite)
 {
     if (context->isOpenHold && !isHoldLock) {
         search_hold();
@@ -828,7 +877,7 @@ void  TreeNode::search(bool hold_opposite)
 void TreeNode::search_hold(bool op, bool noneFirstHold)
 {
     if (hold == Piece::None || nexts->size() == 0) {
-        auto  hold_save = hold;
+        auto hold_save = hold;
         auto nexts_save = nexts->takeFirst();
         if (hold == Piece::None) {
             hold = node->type;

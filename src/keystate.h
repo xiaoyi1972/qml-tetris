@@ -3,12 +3,14 @@
 #include<functional>
 #include<QVector>
 #include<QMutex>
+#include<atomic>
+
 class Tetris;
 class Task;
 class KeyState
 {
 public:
-    KeyState(Tetris *_tetris, const std::function<void()> &_func, std::function<void()>_endFunc = nullptr,
+    KeyState(const std::function<void()> &_func, std::function<void()>_endFunc = nullptr,
              bool _isDown = false, bool _noDas = false);
     bool keyDown();//按下
     void keyUp();//弹起
@@ -24,7 +26,6 @@ public:
     int dasHandle = -1, arrHandle = -1;
     int switchStopFlag = false;
     QString name;
-    Tetris *tetris = nullptr;
 };
 
 

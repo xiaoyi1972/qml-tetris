@@ -1,7 +1,7 @@
 ﻿#include "keystate.h"
 #include"tetris.cpp"
 
-KeyState::KeyState(Tetris *_tetris,
+KeyState::KeyState(
                    const std::function<void()> &_func, std::function<void()>_endFunc,
                    bool _isDown, bool _noDas)
 {
@@ -9,7 +9,6 @@ KeyState::KeyState(Tetris *_tetris,
     endFunc = _endFunc;
     isDown = _isDown;
     noDas = _noDas;
-    tetris = _tetris;
 }
 
 bool KeyState::keyDown()
@@ -21,9 +20,9 @@ bool KeyState::keyDown()
             return true;
         }
         if (isDown) {
-            moveCall(tetris->keyconfig.softdropDelay);
+            moveCall(Tetris::keyconfig.softdropDelay);
         } else {
-            dasHandle = tetris->task.setTimeOut(std::bind(&KeyState::dasCall, this), tetris->keyconfig.dasDelay);
+            dasHandle = Tetris::task.setTimeOut(std::bind(&KeyState::dasCall, this), Tetris::keyconfig.dasDelay);
         }
         return true;
     } else {
@@ -34,13 +33,13 @@ bool KeyState::keyDown()
 void  KeyState::dasCall()
 {
     das = true;
-    if (dasHandle != -1)
-        moveCall(tetris->keyconfig.arrDelay);
+    dasHandle = -1;
+    moveCall(Tetris::keyconfig.arrDelay);
 }
 
 void KeyState::moveCall(int delay)
 {
-    dasHandle = -1;
+
     /*  if (delay ==  0)
       {
       //   endFunc();
@@ -48,7 +47,7 @@ void KeyState::moveCall(int delay)
       else*/
     {
         // func();
-        arrHandle = tetris->task.setInterval(std::bind(&KeyState::funcChecked, this), delay);
+        arrHandle = Tetris::task.setInterval(std::bind(&KeyState::funcChecked, this), delay);
     }
 }
 
@@ -58,6 +57,7 @@ int KeyState::funcChecked()
         func();
         return 0;
     } else {
+        qDebug()<<"haole";
         return -1;
     }
 }
@@ -84,9 +84,9 @@ void KeyState::switchStop()
 void KeyState::stop()
 {
     if (!isDown) {
-        tetris->task.clearTimeout(dasHandle);
+        Tetris::task.clearTimeout(dasHandle);
         dasHandle = -1;
     }
-    tetris->task.clearInterval(arrHandle);
+    Tetris::task.clearInterval(arrHandle);
     arrHandle = -1;
 }

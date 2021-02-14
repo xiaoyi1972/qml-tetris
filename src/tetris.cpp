@@ -55,15 +55,17 @@ int Task::setTimeOut(const std::function<void()> &func, int delay)
 
 void Task::clearTimeout(int timerId)
 {
+    if (thread() != QThread::currentThread()) {
+        QMetaObject::invokeMethod(this, "clearTimeout", Qt::QueuedConnection, Q_ARG(int, timerId));
+    }
     if (timerId != -1)
         if (m_timeoutHash.contains(timerId)) {
+            m_timeoutHash.remove(timerId);
             if (thread() != QThread::currentThread()) {
                 QMetaObject::invokeMethod(this, "killTimer_", Qt::BlockingQueuedConnection, Q_ARG(int, timerId));
             } else {
                 killTimer(timerId);
             }
-            m_timeoutHash.remove(timerId);
-            timerId = -1;
         }
 }
 
@@ -81,15 +83,17 @@ int Task::setInterval(const std::function<int()> &func, int delay)
 
 void Task::clearInterval(int timerId)
 {
+    if (thread() != QThread::currentThread()) {
+        QMetaObject::invokeMethod(this, "clearInterval", Qt::QueuedConnection, Q_ARG(int, timerId));
+    }
     if (timerId != -1)
         if (m_intervalHash.contains(timerId)) {
+            m_intervalHash.remove(timerId);
             if (thread() != QThread::currentThread()) {
                 QMetaObject::invokeMethod(this, "killTimer_", Qt::BlockingQueuedConnection, Q_ARG(int, timerId));
             } else {
                 killTimer(timerId);
             }
-            m_intervalHash.remove(timerId);
-            timerId = -1;
         }
 }
 
@@ -112,6 +116,9 @@ void Task::timerEvent(QTimerEvent *event)
 }
 
 MyThread Tetris::td;
+Task Tetris::task;
+Tetris::keyConfig Tetris:: keyconfig;
+
 Tetris::Tetris()
 {
     connect(&watcher, SIGNAL(finished()),  this, SLOT(playPath()));
@@ -190,10 +197,10 @@ void Tetris::keyPressEvent(QKeyEvent *event)
         QTime stopTime = QTime::currentTime();
         int elapsed = startTime.msecsTo(stopTime);
         qDebug() << "QTime.currentTime =" << elapsed << "ms" << x.size();
-    } else if (_key == Qt::Key_A) {
-        TetrisBot::evalute(tn, map, 0, 0);
-        qDebug() << Tool::printNode(tn);
     }
+    else if (_key == Qt::Key_A) {
+            TetrisBot::evalute(tn,map,0,0);
+        }
 }
 
 //键盘释放事件
@@ -208,7 +215,10 @@ void Tetris::keyReleaseEvent(QKeyEvent *event)
             rightKey.keyUp();
             rightKey.keyDown();
         }
-    } else if (_key == keyconfig.rightKey) {
+    }/* else if (_key == Qt::Key_A) {
+        QKeyEvent test1{ QEvent::KeyRelease, keyconfig.rightKey, Qt::NoModifier};
+         keyReleaseEvent(&test1);
+    } */else if (_key == keyconfig.rightKey) {
         rightKey.keyUp();
         if (leftKey.switchStopFlag) {
             leftKey.keyUp();
@@ -314,7 +324,7 @@ void Tetris::harddrop()
         record.add(Oper::HardDrop, timeRecord());
     holdSys.reset();
 
-    mutex.lock();
+    //mutex.lock();
     auto dropDis = tn.getDrop(map);
     if (dropDis > 0)
         tn.lastRotate = false;
@@ -346,7 +356,7 @@ void Tetris::harddrop()
     passNext();
     tn = TetrisNode{piece};
 
-    mutex.unlock();
+    //mutex.unlock();
 
     for (auto &row_i : clear) {//for dig mod
         if (((map.height - 11) + (10 - digRows)) < row_i && row_i < map.height) {
@@ -672,10 +682,10 @@ void Tetris::ExampleMap()
     map.data[map.height - 1] = 0b1101111111;*/
     //tsd
     // map.data[map.height - 7] = 0b0000000000;
-    // map.data[map.height - 6] = 0b0100000000;
-    /*map.data[map.height - 5] = 0b0000000000;*/
-    map.data[map.height - 4] = 0b1000100000;
-    map.data[map.height - 3] = 0b1011111111;
+    // map.data[map.height - 6] = 0b0100000000;*/
+    map.data[map.height - 5] = 0b0100000000;
+    map.data[map.height - 4] = 0b0000000000;
+    map.data[map.height - 3] = 0b1000000000;
     map.data[map.height - 2] = 0b1001111111;
     map.data[map.height - 1] = 0b1011111111;
 

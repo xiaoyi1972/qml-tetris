@@ -66,7 +66,7 @@ Item {
         function playDead() {
             animationDead.start()
         }
-        function stop(){
+        function stop() {
             animationDead.stop()
         }
         vertexShader: "
@@ -114,15 +114,17 @@ gl_FragColor =vec4(tex.rgb,tex.a);
         Behavior on x {
             id: xb
             SmoothedAnimation {
-                duration: fk.xyDuration / Math.ceil(
-                              Math.abs(xb.targetValue - fk.x) / 19 + .1)
+                duration: Math.ceil(
+                              fk.xyDuration / Math.ceil(
+                                  Math.abs(xb.targetValue - fk.x) / 19 + .1))
             }
         }
         Behavior on y {
             id: yb
             SmoothedAnimation {
-                duration: fk.xyDuration / Math.ceil(
-                              Math.abs(yb.targetValue - fk.y) / 19 + .1)
+                duration: Math.ceil(
+                              fk.xyDuration / Math.ceil(
+                                  Math.abs(yb.targetValue - fk.y) / 19 + .1))
             }
         }
         Behavior on rotation {
@@ -143,7 +145,7 @@ gl_FragColor =vec4(tex.rgb,tex.a);
         id: shadow
         property int minoType: -1
         property var board: []
-        property int xyDuration:50
+        property int xyDuration: 50
         x: 0
         y: 0
         transformOrigin: Item.Center
@@ -151,15 +153,19 @@ gl_FragColor =vec4(tex.rgb,tex.a);
         Behavior on x {
             id: xb1
             SmoothedAnimation {
-                duration: shadow.xyDuration / Math.ceil(
-                              Math.abs(xb1.targetValue - shadow.x) / 19 + .1)
+                duration: Math.ceil(
+                              shadow.xyDuration / Math.ceil(
+                                  Math.abs(
+                                      xb1.targetValue - shadow.x) / 19 + .1))
             }
         }
         Behavior on y {
             id: yb1
             SmoothedAnimation {
-                duration: shadow.xyDuration / Math.ceil(
-                              Math.abs(yb1.targetValue - shadow.y) / 19 + .1)
+                duration: Math.ceil(
+                              shadow.xyDuration / Math.ceil(
+                                  Math.abs(
+                                      yb1.targetValue - shadow.y) / 19 + .1))
             }
         }
 
@@ -205,22 +211,22 @@ gl_FragColor =vec4(tex.rgb,tex.a);
         }
     }
 
-        Text {
-            id:holdText
-            anchors.margins: 5
-            anchors.topMargin: 0
-            anchors.top: displayBorder.top
-            anchors.right: root.left
-            font.pointSize: 16
-            text: "暂存"
-             horizontalAlignment: Text.AlignRightA
-        }
-        Mino {
-            anchors.topMargin: 10
-            anchors.top:holdText.bottom
-            anchors.right: holdText.right
-            id: hold
-        }
+    Text {
+        id: holdText
+        anchors.margins: 5
+        anchors.topMargin: 0
+        anchors.top: displayBorder.top
+        anchors.right: root.left
+        font.pointSize: 16
+        text: "暂存"
+        horizontalAlignment: Text.AlignRightA
+    }
+    Mino {
+        anchors.topMargin: 10
+        anchors.top: holdText.bottom
+        anchors.right: holdText.right
+        id: hold
+    }
 
     ColumnLayout {
         anchors.right: root.left

@@ -32,6 +32,7 @@ struct Status {
     double value = 0.;
     int mapRise = 0;
     int underAttack = 0;
+    bool cutB2b = false;
     bool operator<(const Status &other) const
     {
         return this->value < other.value;

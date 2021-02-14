@@ -4,7 +4,7 @@ Rectangle {
     id: root
     property bool dying: false
     property bool spawned: false
-    opacity: 0
+    opacity: 1
 
     Behavior on y {
         id: that
@@ -21,15 +21,26 @@ Rectangle {
         }
     }
 
+    ColorAnimation {
+        id: colorAni
+        target: root
+        property: "color"
+        from: Qt.tint(root.color, Qt.hsla(
+                            root.color.hslHue,
+                            Math.max(Math.ceil(root.color.hslSaturation * 100) - 30,0) / 100,
+                            Math.max(Math.ceil(root.color.hslLightness * 100 + 50), 100) / 100,
+                            root.color.a))
+        to: root.color
+        duration: 130
+    }
+
     states: [
         State {
             name: "AliveState"
             when: spawned == true && dying == false
-             PropertyChanges {
+            PropertyChanges {
                 target: root
-                opacity: 1
             }
-
         },
 
         State {
@@ -40,26 +51,21 @@ Rectangle {
                 opacity: 0
             }
             StateChangeScript {
-                script: root.destroy(100)
+                script: {
+                    colorAni.stop()
+                    root.destroy(100)
+                }
             }
         }
     ]
-
-    NumberAnimation {
-        target: root
-        properties: "opacity"
-        from: 0
-        to: 1
-        duration: 100
-        easing.type: Easing.InOutBack
-        loops: Animation.Infinite
-        // running:true
-    }
 
     function banAimate(is) {
         that.enabled = is
     }
     function banFlash(is) {
         opacityAni.enabled = is
+    }
+    function playColor() {
+        colorAni.start()
     }
 }

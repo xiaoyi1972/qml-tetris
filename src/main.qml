@@ -10,7 +10,26 @@ Window {
     width: 640
     height: 500
     visible: true
-    title: qsTr("tetrix")
+    title: qsTr("堆垛机")
+
+    /*Component.onCompleted: {
+        let str;
+        for(let index=0;index<7;index++){
+        switch(index){
+        case 0: str = Qt.rgba(245 / 255, 220 / 255, 0 / 255); break;
+        case 1: str = Qt.rgba(94 / 255, 158 / 255, 160 / 255); break;
+        case 2: str = Qt.rgba(138 / 255, 43 / 255, 227 / 255); break;
+        case 3: str = Qt.rgba(255 / 255, 166 / 255, 0 / 255); break;
+        case 4: str = Qt.rgba(0 / 255, 0 / 255, 255 / 255); break;
+        case 5: str = Qt.rgba(51 / 255, 204 / 255, 51 / 255); break;
+        case 6: str = Qt.rgba(255 / 255, 0 / 255, 0 / 255); break;
+        }
+        let ms=`Qt.hsla(${Math.ceil(str.hslHue*360)},${Math.ceil(str.hslSaturation*100)},${Math.ceil(str.hslLightness*100)},${str.a})`
+        console.log(ms)
+        }
+    let test=Qt.hsla(54/360,100/100,49/100,1);
+        console.log(`Qt.rgba(${Math.ceil(test.r*255)},${Math.ceil(test.g*255)},${Math.ceil(test.b*255)},${test.a})`)
+    }*/
 
     Tetris {
         id: w
