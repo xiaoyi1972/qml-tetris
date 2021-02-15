@@ -28,12 +28,8 @@ public:
 class TetrisMap
 {
 public:
-    TetrisMap(int _width = 0, int _height = 0)
+    TetrisMap(int _width = 0, int _height = 0): width(_width), height(_height), roof(_height), count(0)
     {
-        width = _width;
-        height = _height;
-        roof = _height;
-        count = 0;
         data = new int[height];
         std::memset(data, 0, height * sizeof(int));
         std::memset(top, _height, 32 * sizeof(char));

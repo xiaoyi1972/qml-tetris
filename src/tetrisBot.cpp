@@ -367,7 +367,7 @@ TetrisBot::EvalResult TetrisBot::evalute(TetrisNode &lp, TetrisMap &map, int cle
         return value;
     };
 
-    auto  eval_map = [&evalResult](TetrisMap & map) {
+    auto  eval_map = [](TetrisMap & map) {
         struct {
             int colTrans;
             int rowTrans;
@@ -435,11 +435,12 @@ TetrisBot::EvalResult TetrisBot::evalute(TetrisNode &lp, TetrisMap &map, int cle
             int num = 0;
             int suitNum = 0;
             int fill = 0;
-            int index = 0;
+            int index = -1;
             int maxCount = 0;
             void caculate(int col)
             {
-                maxCount = (1 + col) * col / 2;
+                if (index != -1)
+                    maxCount = (1 + col) * col / 2;
             }
         } fillWell;
 
@@ -472,12 +473,11 @@ TetrisBot::EvalResult TetrisBot::evalute(TetrisNode &lp, TetrisMap &map, int cle
         }
 
         fillWell.caculate(m.wellNum[fillWell.index]);
-
         auto value = (0.
                       - m.lowestRoof * 96
                       - m.colTrans  * 60
-                      //- m.rowTrans * 120
-                      // - m.holes * 60
+                      //- m.rowTrans * 50
+                      //- m.holes * 40
                       - m.holeLines * 380 * 0.88
                       // - m.wellDepth * 100
                       - (fillWell.suitNum == 0 ? (fillWell.num == 0 ? 1000 : 100 * m.wellDepth) :
@@ -487,7 +487,7 @@ TetrisBot::EvalResult TetrisBot::evalute(TetrisNode &lp, TetrisMap &map, int cle
 
 
 
-        double rate = 32 * 5, mul = 1.0 / 4;
+        double rate = 32 * 3, mul = 1.0 / 4;
         for (auto i = m.holePosyIndex - 1; i > -1; --i, rate *= mul) {
             value -= m.clearWidth[i]   * rate;
         }
@@ -609,9 +609,10 @@ fanhui:
         int safe = INT_MAX;
         for (auto type = 0; type < 7; type++) {
             auto *virtualNode = &TreeContext::nodes[type];
-            if (!virtualNode->check(map))
+            if (!virtualNode->check(map)) {
                 safe = -1;
-            else {
+                break;
+            } else {
                 auto dropDis = virtualNode->getDrop(map);
                 safe = std::min(dropDis, safe);
             }
@@ -633,13 +634,13 @@ TetrisBot::Status TetrisBot::get(const TetrisBot::EvalResult &evalResult, Tetris
 {
     auto &comboTable = TreeContext::comboTable;
     auto tableMax = int(comboTable.size());
-    auto full_count_ = 20 * 10;
     auto result = status;
     result.value = evalResult.value;
     result.mapRise = 0;
 
     if (evalResult.safe <= 0) {
-        result.value = (INT_MIN >> 4);
+        result.deaded = true;
+        return result;
     }
 
     switch (evalResult.clear) {
@@ -651,7 +652,8 @@ TetrisBot::Status TetrisBot::get(const TetrisBot::EvalResult &evalResult, Tetris
         if (status.underAttack > 0) {
             result.mapRise += std::max(0, std::abs(status.underAttack - status.attack));
             if (result.mapRise >= evalResult.safe) {
-                result.value = (INT_MIN >> 4);
+                result.deaded = true;
+                return result;
             }
             result.underAttack = 0;
         }
@@ -698,12 +700,7 @@ TetrisBot::Status TetrisBot::get(const TetrisBot::EvalResult &evalResult, Tetris
     }
     if (status.b2b && !result.b2b) {
         result.like -= 2;
-        result.b2bCount = 0;
         result.cutB2b = true;
-    }
-
-    if (status.b2b) {
-        result.b2bCount ++;
     }
 
     auto t_expect = [&]() {
@@ -732,13 +729,13 @@ TetrisBot::Status TetrisBot::get(const TetrisBot::EvalResult &evalResult, Tetris
     result.maxCombo = std::max(result.combo, result.maxCombo);
     result.maxAttack = std::max(result.attack, result.maxAttack);
 
-    result.value += (( 0.+ (result.cutB2b ? (0): (0.
-                                   + result.attack * 256 * rate
-                                   + result.like * 64
-                                   + (result.b2b ? 512 : 0)
-                                   + (evalResult.t2Value) * (t_expect() < 8 ? 512 : 320)  //* 1.5
-                                   //+ (evalResult.safe >= 12 ? evalResult.t3Value * (t_expect() < 4 ? 10 : 8) * (result.b2b ? 512 : 256) / (8 + result.underAttack) : 0)
-                                  ) )) * 0.5);
+    result.value += ((0. + (result.cutB2b ? (0) : (0.
+                                                   + result.attack * 256 * rate
+                                                   + result.like * 64
+                                                   + (result.b2b ? 512 : 0)
+                                                   + (evalResult.t2Value) * (t_expect() < 8 ? 512 : 320)  //* 1.5
+                                                   //+ (evalResult.safe >= 12 ? evalResult.t3Value * (t_expect() < 4 ? 10 : 8) * (result.b2b ? 512 : 256) / (8 + result.underAttack) : 0)
+                                                  ))) * 0.5);
     return result;
 }
 
@@ -763,6 +760,7 @@ bool TreeNodeCompare::operator()(TreeNode *const &a, TreeNode *const &b) const
 {
     return  a->evalParm.status < b->evalParm.status;
 }
+
 
 void TreeContext::createRoot(TetrisNode &_node, TetrisMap &_map, QVector<Piece> &dp, Piece _hold, int _b2b, int _combo)
 {
@@ -815,7 +813,12 @@ void TreeContext::run()
     }
 }
 
-std::tuple<TetrisNode, bool, bool> TreeContext::getBest()
+TreeContext::Result TreeContext::empty()
+{
+    return {TetrisNode{root->node->type}, false, test};
+}
+
+TreeContext::Result TreeContext::getBest()
 {
     return root->getBest();
 }
@@ -855,11 +858,12 @@ TreeNode *TreeNode::generateChildNode(TetrisNode &i_node, bool _isHoldLock, Piec
     auto status_ = TetrisBot::get(TetrisBot::evalute(i_node, map_, clear, context->tCount),
                                   evalParm.status, hold, &context->nexts, nextIndex + 1);
     EvalParm evalParm_ = { i_node, clear, status_};
-    auto *new_tree = new TreeNode{context, this, next_node, map_, nextIndex + 1, _hold, _isHold, evalParm_};
-    new_tree->isHoldLock = _isHoldLock;
-//   if (evalParm.status.b2b && !status_.b2b) {}
-    // else
-    children.append(new_tree);
+    TreeNode *new_tree = nullptr;
+    if (!status_.deaded) {
+        new_tree = new TreeNode{context, this, next_node, map_, nextIndex + 1, _hold, _isHold, evalParm_};
+        new_tree->isHoldLock = _isHoldLock;
+        children.append(new_tree);
+    }
     return new_tree;
 }
 
@@ -897,12 +901,12 @@ void TreeNode::search_hold(bool op, bool noneFirstHold)
         auto hold_node = TetrisNode{hold};
         for (auto &i_node : TetrisBot::search(*node, map)) {
             auto childTree = generateChildNode(i_node, true, hold, bool(op ^ false));
-            if (noneFirstHold)
+            if (noneFirstHold && childTree != nullptr)
                 childTree->nexts = & context->noneHoldFirstNexts;
         }
         for (auto &i_node :  TetrisBot::search(hold_node, map)) {
             auto childTree = generateChildNode(i_node, true, node->type, bool(op ^ true));
-            if (noneFirstHold)
+            if (noneFirstHold && childTree != nullptr)
                 childTree->nexts = & context->noneHoldFirstNexts;
         }
     }
@@ -931,17 +935,12 @@ void  TreeNode::run()
         context->width = 2;
     } else
         context->width += 1;
-
-//    auto pruneHold = ++context->width;
-//   auto pruneHoldMax = pruneHold * 3;
-
     while (--i > 0) {
         auto levelPruneHold = std::max<size_t>(1, size_t(context->width_cache[i - 1] * context->width *  context->div_ratio));
         auto &deepIndex = i;
         auto &levelSets = context->level[deepIndex];
         auto &nextLevelSets = context->level[deepIndex - 1];
         auto &extendedLevelSets = context->extendedLevel[deepIndex];
-        // qDebug("levelSets[%d]:%d length:%d lph:%d", deepIndex, levelSets.size(), context->level.size(),levelPruneHold);
         if (i == previewLength)
             levelPruneHold = levelSets.size();
         if (levelSets.empty())
@@ -964,10 +963,17 @@ void  TreeNode::run()
     }
 }
 
-std::tuple<TetrisNode, bool, bool> TreeNode::getBest()
+TreeContext::Result TreeNode::getBest()
 {
     TreeNode *best = nullptr;
-    best = context->level.first().top();
+    for (const auto &level : context->level) {
+        if (!level.empty()) {
+            best = level.top();
+            break;
+        }
+    }
+    if (best == nullptr)
+        return context->empty();
     QVector<TreeNode *> record{best};
     while (best->parent != nullptr) {
         record.push_front(best->parent);

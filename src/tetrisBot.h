@@ -24,7 +24,7 @@ namespace TetrisBot
 struct Status {
     int combo = 0;
     bool b2b = false;
-    int b2bCount = 0;
+    bool deaded = false;
     int attack = 0;
     int like = 0;
     int maxCombo = 0;
@@ -64,10 +64,12 @@ class TreeContext
 public:
     TreeContext() {};
     ~TreeContext();
+    using Result = std::tuple<TetrisNode, bool, bool>;
     void createRoot(TetrisNode &, TetrisMap &, QVector<Piece> &, Piece, int, int);
     void treeDelete(TreeNode *);
     void run();
-    std::tuple<TetrisNode, bool, bool>getBest();
+    Result empty();
+    Result getBest();
     static QVector<TetrisNode> nodes;
     static std::array<int, 13> comboTable;
 private:
@@ -106,8 +108,8 @@ public:
     void search(bool hold_opposite = false);
     void search_hold(bool op = false, bool noneFirstHold = false);
     bool eval();
-    void  run();
-    std::tuple<TetrisNode, bool, bool> getBest();
+    void run();
+    TreeContext::Result getBest();
     friend class TreeContext;
     friend class TreeNodeCompare ;
 private:

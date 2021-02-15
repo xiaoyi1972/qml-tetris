@@ -197,10 +197,9 @@ void Tetris::keyPressEvent(QKeyEvent *event)
         QTime stopTime = QTime::currentTime();
         int elapsed = startTime.msecsTo(stopTime);
         qDebug() << "QTime.currentTime =" << elapsed << "ms" << x.size();
+    } else if (_key == Qt::Key_A) {
+        TetrisBot::evalute(tn, map, 0, 0);
     }
-    else if (_key == Qt::Key_A) {
-            TetrisBot::evalute(tn,map,0,0);
-        }
 }
 
 //键盘释放事件
@@ -683,11 +682,11 @@ void Tetris::ExampleMap()
     //tsd
     // map.data[map.height - 7] = 0b0000000000;
     // map.data[map.height - 6] = 0b0100000000;*/
-    map.data[map.height - 5] = 0b0100000000;
-    map.data[map.height - 4] = 0b0000000000;
-    map.data[map.height - 3] = 0b1000000000;
-    map.data[map.height - 2] = 0b1001111111;
-    map.data[map.height - 1] = 0b1011111111;
+    /* map.data[map.height - 5] = 0b0100000000;
+     map.data[map.height - 4] = 0b0000000000;
+     map.data[map.height - 3] = 0b1000000000;
+     map.data[map.height - 2] = 0b1001111111;
+     map.data[map.height - 1] = 0b1011111111;*/
 
 
     /*map.data[map.height - 8] = 0b1100000010;
@@ -698,12 +697,19 @@ void Tetris::ExampleMap()
     map.data[map.height - 3] = 0b1101111001;
     map.data[map.height - 2] = 0b1111110000;
     map.data[map.height - 1] = 0b0000000000;*/
+    map.data[map.height - 5] = 0b1001111111;
+    map.data[map.height - 4] = 0b1000111111;
+    map.data[map.height - 3] = 0b1110111111;
+    map.data[map.height - 2] = 0b1100111111;
+    map.data[map.height - 1] = 0b1101111111;
     reverseMap();
     //qDebug() << 0b1111110101;
 
-    /*  for (auto i = 1; i < 18; i++) {
-          map.data[map.height - i] = 0b1111000111;
-      }*/
+   /* for (auto i = 1; i < 19; i++) {
+        auto row = 0b1010101010;
+        //row &= ~(1 << (i % 10));
+        map.data[map.height - i] = (i % 2 ? row : (row >> 1));
+    }*/
 
     for (auto i = 0; i < map.height; i++)
         for (auto j = 0; j < map.width; j++) {
