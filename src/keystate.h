@@ -1,10 +1,8 @@
 ﻿#ifndef KEYSTATE_H
 #define KEYSTATE_H
 #include<functional>
-#include<QVector>
 #include<QMutex>
-#include<atomic>
-
+#include<QWaitCondition>
 class Tetris;
 class Task;
 class KeyState
@@ -25,7 +23,7 @@ public:
     bool isDown, noDas, press = false, das = false;
     int dasHandle = -1, arrHandle = -1;
     int switchStopFlag = false;
-    QString name;
+
 };
 
 

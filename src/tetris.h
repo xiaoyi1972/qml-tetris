@@ -32,12 +32,16 @@ public slots:
     void killTimer_(int);
     int startTimer_(int);
     void timerEvent(QTimerEvent *);
-
+    void pressHandle(int );
+    void releaseHandle(int);
 public:
     Task() = default;
     void back(QThread *);
     QHash<int, std::function<int()>> m_intervalHash;
     QHash<int, std::function<void()>> m_timeoutHash;
+    KeyState leftKey{nullptr};
+    KeyState rightKey{nullptr};
+    KeyState softDropKey{nullptr, nullptr, true};
 };
 
 class Tetris: public QQuickItem
@@ -140,6 +144,8 @@ signals:
     void activeFresh(QVariantMap a);
     void mapFresh(QVariantMap a);
     void restartGame();
+    void the(int);
+    void the1(int);
 };
 
 #endif // TETRIS_H

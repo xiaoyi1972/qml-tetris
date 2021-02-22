@@ -2,8 +2,8 @@
 #include"tetris.cpp"
 
 KeyState::KeyState(
-                   const std::function<void()> &_func, std::function<void()>_endFunc,
-                   bool _isDown, bool _noDas)
+        const std::function<void()> &_func, std::function<void()>_endFunc,
+        bool _isDown, bool _noDas)
 {
     func = _func;
     endFunc = _endFunc;
@@ -57,7 +57,7 @@ int KeyState::funcChecked()
         func();
         return 0;
     } else {
-        qDebug()<<"haole";
+        qDebug() << "haole";
         return -1;
     }
 }

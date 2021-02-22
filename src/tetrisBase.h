@@ -191,7 +191,6 @@ public:
         pos = _pos;
         type = _type;
         rotateState = _rotateState;
-        mdata = &rotateDatas[type][rotateState];
     }
 
     int full(int x, int y) const
@@ -201,10 +200,11 @@ public:
 
     int operator()(int x, int y) const
     {
-        if (x < 0 || x > mdata->size() - 1 || y < 0 || y > mdata->size() - 1)
+        const auto &data = rotateDatas[type][rotateState];
+        if (x < 0 || x > data.size() - 1 || y < 0 || y > data.size() - 1)
             return 0;
         else
-            return (mdata->at(x) >> y) & 1;
+            return (data.at(x) >> y) & 1;
     }
 
     bool operator==(const TetrisNode &other) const
@@ -226,13 +226,13 @@ public:
     {
         rotateState = !_reverse ? rotateState + _index : rotateState - _index;
         rotateState = (rotateState < 0 ? rotateState + 4 : rotateState) % 4;
-        mdata = &rotateDatas[type][rotateState];
     }
 
     bool check(TetrisMap &map, int _x, int  _y) const
     {
         auto real = true;
-        auto size = mdata->size();
+        const auto &data = rotateDatas[type][rotateState];
+        auto size = data.size();
         for (int x = 0; x < size; x++)
             for (int y = 0; y < size; y++) {
                 if (full(y, x) && map(_y + y, _x + x)) {
@@ -257,9 +257,10 @@ public:
     std::tuple<QVector<Pos>, QVector<int>> attachs(TetrisMapEx &map)
     {
         QVector<Pos> change;
-        auto size = mdata->size();
+        const auto &data = rotateDatas[type][rotateState];
+        auto size = data.size();
         for (auto i = 0; i < size; i++) {
-            auto dataI = pos.x > 0 ? mdata->at(i) << pos.x : mdata->at(i) >> std::abs(pos.x);
+            auto dataI = pos.x > 0 ? data.at(i) << pos.x : data.at(i) >> std::abs(pos.x);
             map.data[i + pos.y] |= dataI;
             if (dataI) {
                 map.roof = std::min(pos.y + i, map.roof);
@@ -279,14 +280,15 @@ public:
 
     int attach(TetrisMap &map)
     {
-        return attach(map, pos);
+        return attach(map, pos, rotateState);
     }
 
-    int attach(TetrisMap &map, const Pos &_pos)
+    int attach(TetrisMap &map, const Pos &_pos, char _rotateState)
     {
-        auto size = mdata->size();
+        const auto &data = rotateDatas[type][_rotateState];
+        auto size = data.size();
         for (auto i = 0; i < size; i++) {
-            auto dataI = _pos.x > 0 ? mdata->at(i) << _pos.x : mdata->at(i) >> std::abs(_pos.x);
+            auto dataI = _pos.x > 0 ? data.at(i) << _pos.x : data.at(i) >> std::abs(_pos.x);
             map.data[i + _pos.y] |= dataI;
             if (dataI) {
                 map.roof = std::min(_pos.y + i, map.roof);
@@ -409,7 +411,8 @@ public:
     {
         uint seed = 0;
         QtPrivate::QHashCombine hash;
-        auto size = mdata->size();
+        const auto &data = rotateDatas[type][rotateState];
+        auto size = data.size();
         for (int x = 0; x < size; x++)
             for (int y = 0; y < size; y++) {
                 if (full(y, x)) {
@@ -421,7 +424,6 @@ public:
     }
 
     Pos pos;
-    data *mdata;
     Piece type;
     char rotateState;
     bool mini = false, spin = false, lastRotate = false;
@@ -481,18 +483,16 @@ public:
 
     void getBag()
     {
-        //bag.fill(Piece::T, 7);
-        //bag=QVector<Piece>{Piece::J,Piece::Z,Piece::S,Piece::J,Piece::Z,Piece::T,Piece::I};
-        //return;
-        do {
-            //  auto num = static_cast<Piece>(qrand() % 7);
-            auto num = static_cast<Piece>(rand.generate() % 7);
-            if (bag.contains(num)) {
-                continue;
-            } else {
-                bag.append(num);
-            }
-        } while (bag.size() != 7);
+        if (constexpr bool  test = false; test) {
+            bag.fill(Piece::T, 7);
+            bag = QVector<Piece> {Piece::J, Piece::Z, Piece::S, Piece::J, Piece::Z, Piece::T, Piece::I};
+            return;
+        }
+        QVector<Piece> bagSets{Piece::O, Piece::I, Piece::T, Piece::L, Piece:: J, Piece:: S, Piece:: Z};
+        while (bag.size() < 7) {
+            auto piece = bagSets.takeAt(rand.generate() % bagSets.size());
+            bag.append(piece);
+        }
     }
 
     Piece getOne()

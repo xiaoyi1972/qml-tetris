@@ -25,6 +25,45 @@ void Task::back(QThread *td)
     }
 }
 
+void Task::pressHandle(int e)
+{
+//    qDebug() << "pressed" << e;
+    auto &_key = e;
+    if (_key == Tetris:: keyconfig.leftKey) {
+        if (rightKey.press)
+            rightKey.switchStop();
+        else
+            rightKey.keyUp();
+        leftKey.keyDown();
+    } else if (_key == Tetris:: keyconfig.rightKey) {
+        if (leftKey.press)
+            leftKey.switchStop();
+        else
+            leftKey.keyUp();
+        rightKey.keyDown();
+    } else if (_key == Tetris:: keyconfig.softDropKey)
+        softDropKey.keyDown();
+}
+void Task::releaseHandle(int e)
+{
+  //  qDebug() << "release" << e;
+    auto &_key = e;
+    if (_key == Tetris:: keyconfig.leftKey) {
+        leftKey.keyUp();
+        if (rightKey.switchStopFlag) {
+            rightKey.keyUp();
+            rightKey.keyDown();
+        }
+    } else if (_key == Tetris:: keyconfig.rightKey) {
+        rightKey.keyUp();
+        if (leftKey.switchStopFlag) {
+            leftKey.keyUp();
+            leftKey.keyDown();
+        }
+    } else if (_key == Tetris:: keyconfig.softDropKey)
+        softDropKey.keyUp();
+}
+
 void Task::test(QThread *td)
 {
     moveToThread(td);
@@ -56,7 +95,9 @@ int Task::setTimeOut(const std::function<void()> &func, int delay)
 void Task::clearTimeout(int timerId)
 {
     if (thread() != QThread::currentThread()) {
+            qDebug()<<"no same";
         QMetaObject::invokeMethod(this, "clearTimeout", Qt::QueuedConnection, Q_ARG(int, timerId));
+        return;
     }
     if (timerId != -1)
         if (m_timeoutHash.contains(timerId)) {
@@ -85,6 +126,7 @@ void Task::clearInterval(int timerId)
 {
     if (thread() != QThread::currentThread()) {
         QMetaObject::invokeMethod(this, "clearInterval", Qt::QueuedConnection, Q_ARG(int, timerId));
+        return;
     }
     if (timerId != -1)
         if (m_intervalHash.contains(timerId)) {
@@ -122,6 +164,11 @@ Tetris::keyConfig Tetris:: keyconfig;
 Tetris::Tetris()
 {
     connect(&watcher, SIGNAL(finished()),  this, SLOT(playPath()));
+    connect(this, SIGNAL(the(int)),  &task, SLOT(pressHandle(int)));
+    connect(this, SIGNAL(the1(int)),  &task, SLOT(releaseHandle(int)));
+    task.leftKey.func = std::bind(&Tetris::left, this);
+    task.rightKey.func = std::bind(&Tetris::right, this);
+    task.softDropKey.func = std::bind(&Tetris::softdrop, this);
     task.moveToThread(&td);
     if (!td.isRunning())
         td.start(QThread::Priority::TimeCriticalPriority);
@@ -135,24 +182,13 @@ Tetris::~Tetris()
 
 void Tetris::keyPressEvent(QKeyEvent *event)
 {
+
     if (event->isAutoRepeat())
         return;
     auto _key = event->key();
     if (!deaded) {
         if (_key == keyconfig.harddropKey)
             harddrop();
-        else if (_key == keyconfig.leftKey) {
-            if (rightKey.das)//press)
-                rightKey.switchStop();
-            leftKey.keyDown();
-
-        } else if (_key == keyconfig.rightKey) {
-            if (leftKey.das)//press)
-                leftKey.switchStop();
-            rightKey.keyDown();
-
-        } else if (_key == keyconfig.softDropKey)
-            softDropKey.keyDown();
         else if (_key == keyconfig.cwKey)
             cw();
         else if (_key == keyconfig.ccwKey)
@@ -176,7 +212,6 @@ void Tetris::keyPressEvent(QKeyEvent *event)
         QString originalText = clipboard->text();            //获取剪贴板上文本信息
         clipboard->setText(Recorder::writeStruct(record).toBase64());
     } else if (_key == Qt::Key_V) {
-
         auto row = 0b1111111111;
         auto num = 0;
         num = int(randSys.rand.generate() % 10);
@@ -191,14 +226,10 @@ void Tetris::keyPressEvent(QKeyEvent *event)
         map.update();
         passMap();
         passPiece(true);
-    } else if (_key == Qt::Key_M) {
-        QTime startTime = QTime::currentTime();
-        auto x = TetrisBot::search(tn, map);
-        QTime stopTime = QTime::currentTime();
-        int elapsed = startTime.msecsTo(stopTime);
-        qDebug() << "QTime.currentTime =" << elapsed << "ms" << x.size();
     } else if (_key == Qt::Key_A) {
         TetrisBot::evalute(tn, map, 0, 0);
+    } else {
+        emit the(_key);
     }
 }
 
@@ -208,23 +239,8 @@ void Tetris::keyReleaseEvent(QKeyEvent *event)
     if (event->isAutoRepeat())
         return;
     auto _key = event->key();
-    if (_key == keyconfig.leftKey) {
-        leftKey.keyUp();
-        if (rightKey.switchStopFlag) {
-            rightKey.keyUp();
-            rightKey.keyDown();
-        }
-    }/* else if (_key == Qt::Key_A) {
-        QKeyEvent test1{ QEvent::KeyRelease, keyconfig.rightKey, Qt::NoModifier};
-         keyReleaseEvent(&test1);
-    } */else if (_key == keyconfig.rightKey) {
-        rightKey.keyUp();
-        if (leftKey.switchStopFlag) {
-            leftKey.keyUp();
-            leftKey.keyDown();
-        }
-    } else if (_key == keyconfig.softDropKey)
-        softDropKey.keyUp();
+    emit the1(_key);
+    return;
 }
 
 void Tetris::hold()
@@ -699,17 +715,26 @@ void Tetris::ExampleMap()
     map.data[map.height - 1] = 0b0000000000;*/
     map.data[map.height - 5] = 0b1001111111;
     map.data[map.height - 4] = 0b1000111111;
-    map.data[map.height - 3] = 0b1110111111;
-    map.data[map.height - 2] = 0b1100111111;
+    map.data[map.height - 3] = 0b1101111111;
+    map.data[map.height - 2] = 0b1000111111;
     map.data[map.height - 1] = 0b1101111111;
     reverseMap();
     //qDebug() << 0b1111110101;
 
-   /* for (auto i = 1; i < 19; i++) {
-        auto row = 0b1010101010;
-        //row &= ~(1 << (i % 10));
-        map.data[map.height - i] = (i % 2 ? row : (row >> 1));
-    }*/
+    /*    for (auto i = 1; i < 19; i++) {
+            auto row = 0b1010101010;
+            //row &= ~(1 << (i % 10));
+            map.data[map.height - i] = (i % 2 ? row : (row >> 1));
+        }*/
+
+
+    for (auto i = 1; i < 19; i++) {
+        auto row = 0b0111101110;
+        map.data[map.height - i] = row;//(i % 2 ? row : (row >> 1));
+    }
+    //map.data[3]=0b1101;
+    //map.data[4]=0b0111111111;
+
 
     for (auto i = 0; i < map.height; i++)
         for (auto j = 0; j < map.width; j++) {

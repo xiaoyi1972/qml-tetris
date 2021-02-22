@@ -7,6 +7,8 @@
 #include<queue>
 #include<QtConcurrent>
 #include<limits>
+#include <algorithm>
+#include <functional>
 
 int BitCount(int);
 namespace Tool
@@ -35,7 +37,7 @@ struct Status {
     bool cutB2b = false;
     bool operator<(const Status &other) const
     {
-        return this->value < other.value;
+            return this->value < other.value;
     }
 
 };

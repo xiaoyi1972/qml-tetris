@@ -156,6 +156,7 @@ void Tool::sleepTo(int msec)
 
 QVector<TetrisNode> TetrisBot::search(TetrisNode &_first, TetrisMap &_map)
 {
+    auto softDropDisable = true;
     QSet<TetrisNode> checked;
     QVector<info> queue;
     QHash<info, int> results;
@@ -181,7 +182,7 @@ QVector<TetrisNode> TetrisBot::search(TetrisNode &_first, TetrisMap &_map)
             }
         }
         next = node;
-        if (TetrisNode::shift(next, _map, -1, 0)) { //left
+        if (TetrisNode::shift(next, _map, -1, 0)) { //左
             if (!checked.contains(next)) {
                 next.lastRotate = false;
                 checked.insert(next);
@@ -189,7 +190,7 @@ QVector<TetrisNode> TetrisBot::search(TetrisNode &_first, TetrisMap &_map)
             }
         }
         next = node;
-        if (TetrisNode::shift(next, _map, 1, 0)) { //right
+        if (TetrisNode::shift(next, _map, 1, 0)) { //右
             if (!checked.contains(next)) {
                 next.lastRotate = false;
                 checked.insert(next);
@@ -197,7 +198,7 @@ QVector<TetrisNode> TetrisBot::search(TetrisNode &_first, TetrisMap &_map)
             }
         }
         next = node;
-        if (TetrisNode::rotate(next, _map, true)) { //cw
+        if (TetrisNode::rotate(next, _map, true)) { //逆时针旋转
             if (!checked.contains(next)) {
                 next.lastRotate = true;
                 checked.insert(next);
@@ -205,7 +206,7 @@ QVector<TetrisNode> TetrisBot::search(TetrisNode &_first, TetrisMap &_map)
             }
         }
         next = node;
-        if (TetrisNode::rotate(next, _map, false)) { //ccw
+        if (TetrisNode::rotate(next, _map, false)) { //顺时针旋转
             if (!checked.contains(next)) {
                 next.lastRotate = true;
                 checked.insert(next);
@@ -213,11 +214,21 @@ QVector<TetrisNode> TetrisBot::search(TetrisNode &_first, TetrisMap &_map)
             }
         }
         next = node;
-        next.shift(0, next.getDrop(_map)); //软降
+        next.shift(0, next.getDrop(_map)); //软降到底
         if (!checked.contains(next)) {
             next.lastRotate = false;
             checked.insert(next);
             queue.append(info{std::move(next), count + 1});
+        }
+        if (softDropDisable) {
+            next = node;
+            if (TetrisNode::shift(next, _map, 0, 1)) { //单次软降
+                if (!checked.contains(next)) {
+                    next.lastRotate = false;
+                    checked.insert(next);
+                    queue.append(info{std::move(next), count + 1});
+                }
+            }
         }
     }
     QVector<TetrisNode> result;
@@ -233,27 +244,29 @@ QVector<TetrisNode> TetrisBot::search(TetrisNode &_first, TetrisMap &_map)
     return result;
 }
 
-auto TetrisBot::make_path(TetrisNode &start_node, TetrisNode &land_point, TetrisMap &map, bool NoSoftToBottom = false)->QVector<Oper>
+auto TetrisBot::make_path(TetrisNode &startNode, TetrisNode &landPoint, TetrisMap &map, bool NoSoftToBottom = false)->QVector<Oper>
 {
-    QVector<TetrisNode> node_search;
-    QHash<TetrisNode, std::tuple<TetrisNode, Oper>>node_mark;
-    auto &land_node = land_point;
+    using OperMark = std::pair<TetrisNode, Oper>;
+    auto softDropDisable = true;
+    QVector<TetrisNode> nodeSearch;
+    QHash<TetrisNode, OperMark>nodeMark;
+    auto &landNode = landPoint;
 
-    auto mark = [&](TetrisNode & key, std::tuple<TetrisNode, Oper> value) {
-        if (!node_mark.contains(key)) {
-            node_mark.insert(key, value);
+    auto mark = [&nodeMark](TetrisNode & key, OperMark value) {
+        if (!nodeMark.contains(key)) {
+            nodeMark.insert(key, value);
             return true;
         } else
             return false;
     };
 
-    auto build_path = [&](TetrisNode & lp) {
+    auto buildPath = [&nodeMark,&NoSoftToBottom](TetrisNode & lp) {
         QVector<Oper> path;
         auto node = lp;
         while (true) {
-            if (!node_mark.contains(node))
+            if (!nodeMark.contains(node))
                 break;
-            auto result = node_mark.value(node);
+            auto result = nodeMark.value(node);
             auto next = std::get<0>(result);
             auto dropToSd = (path.size() > 0 && std::get<1>(result) == Oper::DropToBottom);
             auto softDropDis = node.pos.y - next.pos.y;
@@ -274,69 +287,61 @@ auto TetrisBot::make_path(TetrisNode &start_node, TetrisNode &land_point, Tetris
         return path;
     };
 
-    node_search.append(start_node);
-    node_mark.insert(start_node, std::pair<TetrisNode, Oper> {TetrisNode{Piece::None}, Oper::None });
-    auto disable_d = land_node.open(map);
-    if (land_node.type == Piece::T && land_node.typeTSpin == TSpinType::TSpinMini)
+    nodeSearch.append(startNode);
+    nodeMark.insert(startNode, OperMark {TetrisNode{Piece::None}, Oper::None });
+    auto disable_d = landNode.open(map);
+    if (landNode.type == Piece::T && landNode.typeTSpin == TSpinType::TSpinMini)
         disable_d = false;
-    while (node_search.size() != 0) {
-        auto next = node_search.takeFirst();
-        auto node = next;
-        if (disable_d) {
-            auto node_D = node.drop(map);
-            if (mark(node_D, std::pair<TetrisNode, Oper> { next, Oper::DropToBottom })) {
-                if (node_D == land_node) {
-                    return build_path(land_node);
-                }
-            }
-        }
-
+    while (nodeSearch.size() != 0) {
+        auto next = nodeSearch.takeFirst();
         //逆时针旋转
-        node = next;
-        if (TetrisNode::rotate(node, map, true) && mark(node, std::pair<TetrisNode, Oper> { next, Oper::Cw })) {
-            if (node == land_node)
-                return build_path(land_node);
+        if (auto node = next; TetrisNode::rotate(node, map, true) && mark(node, OperMark { next, Oper::Cw })) {
+            if (node == landNode)
+                return buildPath(landNode);
             else
-                node_search.append(node);
+                nodeSearch.append(node);
         }
 
         //顺时针旋转
-        node = next;
-        if (TetrisNode::rotate(node, map, false) && mark(node, std::pair<TetrisNode, Oper> { next, Oper::Ccw })) {
-            if (node == land_node)
-                return build_path(land_node);
+        if (auto node = next; TetrisNode::rotate(node, map, false) && mark(node, OperMark { next, Oper::Ccw })) {
+            if (node == landNode)
+                return buildPath(landNode);
             else
-                node_search.append(node);
+                nodeSearch.append(node);
         }
 
         //左
-        node = next;
-        if (TetrisNode::shift(node, map, -1, 0) && mark(node, std::pair<TetrisNode, Oper> { next, Oper::Left })) {
-            if (node == land_node)
-                return build_path(land_node);
+        if (auto node = next; TetrisNode::shift(node, map, -1, 0) && mark(node, OperMark { next, Oper::Left })) {
+            if (node == landNode)
+                return buildPath(landNode);
             else
-                node_search.append(node);
+                nodeSearch.append(node);
         }
 
         //右
-        node = next;
-        if (TetrisNode::shift(node, map, 1, 0) && mark(node, std::pair<TetrisNode, Oper> {next, Oper::Right })) {
-            if (node == land_node)
-                return build_path(land_node);
+        if (auto node = next; TetrisNode::shift(node, map, 1, 0) && mark(node, OperMark {next, Oper::Right })) {
+            if (node == landNode)
+                return buildPath(landNode);
             else
-                node_search.append(node);
+                nodeSearch.append(node);
+        }
+
+        //下
+        if (softDropDisable) {
+            if (auto node = next; TetrisNode::shift(node, map, 0, 1) && mark(node, OperMark{next, Oper::SoftDrop })) {
+                if (node == landNode)
+                    return buildPath(landNode);
+                else
+                    nodeSearch.append(node);
+            }
         }
 
         //软降到底
-        if (!disable_d) {
-            node = next;
-            auto node_D = node.drop(map);
-            if (mark(node_D, std::pair<TetrisNode, Oper> { next, Oper::DropToBottom })) {
-                if (node_D == land_node)
-                    return build_path(land_node);
-                else
-                    node_search.append(node_D);
-            }
+        if (auto node = next.drop(map); mark(node, OperMark { next, Oper::DropToBottom })) {
+            if (node == landNode)
+                return buildPath(landNode);
+            else if (!disable_d)
+                nodeSearch.append(node);
         }
     }
     return QVector<Oper> {};
@@ -760,7 +765,6 @@ bool TreeNodeCompare::operator()(TreeNode *const &a, TreeNode *const &b) const
 {
     return  a->evalParm.status < b->evalParm.status;
 }
-
 
 void TreeContext::createRoot(TetrisNode &_node, TetrisMap &_map, QVector<Piece> &dp, Piece _hold, int _b2b, int _combo)
 {
