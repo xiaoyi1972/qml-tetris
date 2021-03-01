@@ -1,11 +1,11 @@
 ﻿import QtQuick 2.15
-
+import QtQuick.Shapes 1.15
 Rectangle {
     id: root
     property bool dying: false
     property bool spawned: false
     opacity: 1
-
+    scale:0.95
     Behavior on y {
         id: that
         SmoothedAnimation {

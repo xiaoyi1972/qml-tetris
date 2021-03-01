@@ -1,5 +1,7 @@
 ﻿import QtQuick 2.0
+
 Rectangle {
-    id:root
+    id: root
     color: "transparent"
+    scale: 0.95
 }

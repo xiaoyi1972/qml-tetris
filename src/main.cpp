@@ -8,6 +8,7 @@ int main(int argc, char *argv[])
     QGuiApplication app(argc, argv);
     QQmlApplicationEngine engine;
     qmlRegisterType<Tetris>("Tetris", 1, 0, "Tetris");
+      engine.rootContext()->setContextProperty("TetrisConfig", &Tetris::keyconfig);
     const QUrl url(QStringLiteral("qrc:/main.qml"));
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
     &app, [url](QObject * obj, const QUrl & objUrl) {

@@ -1,7 +1,7 @@
 ﻿#include "keystate.h"
 #include"tetris.cpp"
 
-KeyState::KeyState(
+KeyState::KeyState(Task*_task,
         const std::function<void()> &_func, std::function<void()>_endFunc,
         bool _isDown, bool _noDas)
 {
@@ -9,6 +9,7 @@ KeyState::KeyState(
     endFunc = _endFunc;
     isDown = _isDown;
     noDas = _noDas;
+    task=_task;
 }
 
 bool KeyState::keyDown()
@@ -20,9 +21,9 @@ bool KeyState::keyDown()
             return true;
         }
         if (isDown) {
-            moveCall(Tetris::keyconfig.softdropDelay);
+            moveCall(Tetris::keyconfig["softdropDelay"].value<int>());
         } else {
-            dasHandle = Tetris::task.setTimeOut(std::bind(&KeyState::dasCall, this), Tetris::keyconfig.dasDelay);
+            dasHandle = task->setTimeOut(std::bind(&KeyState::dasCall, this), Tetris::keyconfig["dasDelay"].value<int>());
         }
         return true;
     } else {
@@ -34,7 +35,7 @@ void  KeyState::dasCall()
 {
     das = true;
     dasHandle = -1;
-    moveCall(Tetris::keyconfig.arrDelay);
+    moveCall(Tetris::keyconfig["arrDelay"].value<int>());
 }
 
 void KeyState::moveCall(int delay)
@@ -47,7 +48,7 @@ void KeyState::moveCall(int delay)
       else*/
     {
         // func();
-        arrHandle = Tetris::task.setInterval(std::bind(&KeyState::funcChecked, this), delay);
+        arrHandle = task->setInterval(std::bind(&KeyState::funcChecked, this), delay);
     }
 }
 
@@ -57,7 +58,7 @@ int KeyState::funcChecked()
         func();
         return 0;
     } else {
-        qDebug() << "haole";
+        qDebug() << "bad";
         return -1;
     }
 }
@@ -84,9 +85,9 @@ void KeyState::switchStop()
 void KeyState::stop()
 {
     if (!isDown) {
-        Tetris::task.clearTimeout(dasHandle);
+        task->clearTimeout(dasHandle);
         dasHandle = -1;
     }
-    Tetris::task.clearInterval(arrHandle);
+    task->clearInterval(arrHandle);
     arrHandle = -1;
 }

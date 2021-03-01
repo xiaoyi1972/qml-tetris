@@ -56,10 +56,10 @@ Item {
                     console.log(component.errorString())
                     return false
                 }
-                dynamicObject.x = column * (blockSize) + 0.25
-                dynamicObject.y = row * (blockSize) + 0.25
-                dynamicObject.width = blockSize_
-                dynamicObject.height = blockSize_
+                dynamicObject.x = column * (blockSize) //+ 0.25
+                dynamicObject.y = row * (blockSize)// + 0.25
+                dynamicObject.width = blockSize//_
+                dynamicObject.height = blockSize//_
             } else {
                 console.log("error loading block component")
                 console.log(component.errorString())

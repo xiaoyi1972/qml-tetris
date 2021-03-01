@@ -8,7 +8,7 @@ class Task;
 class KeyState
 {
 public:
-    KeyState(const std::function<void()> &_func, std::function<void()>_endFunc = nullptr,
+    KeyState(Task *, const std::function<void()> &_func, std::function<void()>_endFunc = nullptr,
              bool _isDown = false, bool _noDas = false);
     bool keyDown();//按下
     void keyUp();//弹起
@@ -23,7 +23,7 @@ public:
     bool isDown, noDas, press = false, das = false;
     int dasHandle = -1, arrHandle = -1;
     int switchStopFlag = false;
-
+    Task *task = nullptr;
 };
 
 

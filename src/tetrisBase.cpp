@@ -2,7 +2,7 @@
 QMap<bool, QVector<QVector<int>>> TetrisNode::kickDatas = std::invoke([]()
 {
     QMap<bool, QVector<QVector<int>>> kickDatasTo;
-    QVector<data> NomalkickData = {//kickDatas for Piece Others
+    QVector<data> NomalkickData {//kickDatas for Piece Others
         data{-1, 0, -1, 1, 0, -2, -1, -2},//0->R
         data{  1, 0, 1, -1, 0, 2, 1, 2},  //R->0
         data{   1, 0, 1, -1, 0, 2, 1, 2}, //R->2
@@ -12,7 +12,7 @@ QMap<bool, QVector<QVector<int>>> TetrisNode::kickDatas = std::invoke([]()
         data{  -1, 0, -1, -1, 0, 2, -1, 2}, //L->0
         data{  1, 0, 1, 1, 0, -2, 1, -2}//0->L
     };
-    QVector<data > IkickData =  {//kickDatas for Piece I
+    QVector<data > IkickData {//kickDatas for Piece I
         data{-2, 0, 1, 0, -2, -1, 1, 2}, //0->R
         data{2, 0, -1, 0, 2, 1, -1, -2},  //R->0
         data{-1, 0, 2, 0, -1, 2, 2, -1}, //R->2
@@ -30,48 +30,35 @@ QMap<bool, QVector<QVector<int>>> TetrisNode::kickDatas = std::invoke([]()
 QMap<Piece, QVector<QVector<int>>> TetrisNode::rotateDatas = std::invoke([]()
 {
     QMap<Piece, QVector<QVector<int>>> rotateDatasTo;
-    QVector<data> minoTypes = {
-        data{},//None
-        data{0, 6, 6, 0},//O
-        data{0, 15, 0, 0},//I
-        data{2, 7, 0},//T
-        data{4, 7, 0},//L
-        data{1, 7, 0},//J
-        data{6, 3, 0},//S
-        data{3, 6, 0},//Z
+    using mino = std::pair<Piece, data>;
+    mino minoTypes[] {
+        mino{Piece::None, data{}},
+        mino{Piece::O, data{0, 6, 6, 0}},
+        mino{Piece::I, data{0, 15, 0, 0}},
+        mino{Piece::T, data{2, 7, 0}},
+        mino{Piece::L, data{4, 7, 0}},
+        mino{Piece::J, data{1, 7, 0}},
+        mino{Piece::S, data{6, 3, 0}},
+        mino{Piece::Z, data{3, 6, 0}}
     };
-    auto rot = [ = ](data & block) {
+    auto rot = [ ](data & block) {
         auto lh = block.size();
         data newLayout;
-        newLayout.resize(lh);
-        newLayout.fill(0);
+        newLayout.fill(0, lh);
         auto mdata = newLayout.data();
-        for (auto x = 0; x < lh; x++) { //顺时针旋转
+        for (auto x = 0; x < lh; x++)  //顺时针旋转
             for (auto y = 0; y < lh; y++) {
                 auto ry = lh - 1 - y;
-                if ((block[y] & (1 << x)) > 0)
-                    mdata[x] |= (1 << ry);
-                else
-                    mdata[x] &= ~(1 << ry);
+                mdata[x] = ((block[y] & (1 << x)) > 0) ? (mdata[x] | (1 << ry)) : (mdata[x] & (~(1 << ry)));
             }
-        }
         return newLayout;
     };
-
-    auto  initR = [&]() {
-        for (auto p = 0; p < 8; p++) {
-            auto i = 0;
-            QVector<data> sArr;
-            auto origin = minoTypes[p];
-            do {
-                sArr.append(origin);
-                origin = rot(origin);
-                i++;
-            } while (i < 4);
-            rotateDatasTo.insert(static_cast<Piece>(p - 1), std::move(sArr));
-        }
-    };
-    initR();
+    for (auto &p : minoTypes) {
+        QVector<data> sArr{std::get<1>(p)};
+        while (sArr.size() < 4)
+            sArr.append(rot(sArr.last()));
+        rotateDatasTo.insert(std::get<0>(p), std::move(sArr));
+    }
     return rotateDatasTo;
 });
 

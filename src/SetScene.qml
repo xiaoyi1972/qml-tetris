@@ -2,507 +2,567 @@
 import QtQuick.Controls 2.15
 import QtQml 2.2
 import QtQuick.Layouts 1.3
-
 Item {
     id: root
-    property var controlkey: null
     property var tetris: null
-    visible: false
+    property alias config: qConfig
+    visible: true
     focus: false
-    z: 98
+    signal replayCall
 
-    Rectangle {
-        anchors.fill: root
-        color: Qt.rgba(0, 0, 0, 0.5)
+    QtObject{
+        id:qConfig
+        property bool operTransition: false
+        property bool shadow: true
     }
 
-    ScrollView {
-        id: scrollview1
-        anchors.fill: root
-        //ScrollBar.vertical.policy: ScrollBar.AlwaysOn
-        clip: true
-
-        /*
-         style:ScrollViewStyle{
-             id:scrollviewstyle1
-             handle: Rectangle {
-                         implicitWidth: 10
-                         implicitHeight: 30
-                         radius:3
-                         color: "grey"
-                     }
-                     scrollBarBackground: Rectangle {
-                         implicitWidth: 10
-                         implicitHeight: 30
-                         color: "transparent"
-                     }
-                     decrementControl: Rectangle {
-                         implicitWidth: 10
-                         implicitHeight: 0
-                         color: "transparent"
-                     }
-                     incrementControl: Rectangle {
-                         implicitWidth: 10
-                         implicitHeight: 0
-                         color: "transparent"
-                     }
-                     scrollToClickedPosition:true
-                     transientScrollBars:true
-         }*/
-        Column {
-            spacing: 35
-            leftPadding: 5
-            rightPadding: 5
-            topPadding: 10
-            bottomPadding: 10
-
-            //anchors.fill:canvas
-            Column {
-                spacing: 10
-                Row {
-                    Label {
-                        font.family: "Loma"
-                        font.pixelSize: 24
-                        color: "white"
-                        text: "操作设置"
+    ColumnLayout {
+        anchors.fill: parent
+        spacing: 0
+        RowLayout {
+            ListView {
+                id: leftBar
+                currentIndex: 0
+                spacing: 1
+                Layout.minimumHeight: parent.height
+                Layout.minimumWidth: parent.width / 100 * 15
+                model: ListModel {
+                    ListElement {
+                        name: "操作"
+                    }
+                    ListElement {
+                        name: "画面"
+                    }
+                    ListElement {
+                        name: "录像"
                     }
                 }
-
-                Row {
-                    spacing: 5
-                    Text {
-                        id: text1
-                        font.family: "Loma"
-                        font.pixelSize: 20
-                        color: "white"
-                        text: "加速延迟:"
+                delegate: BasicTabButton {
+                    font.pixelSize: 16
+                    font.bold: true
+                    width: parent.width
+                    text: name
+                    onClicked: {
+                        leftBar.currentIndex = index
                     }
-                    TextField {
-                        height: 25
-                        text: root.controlkey.config.das_delay
-                        validator: IntValidator {
-                            bottom: 0
-                        }
-                        width: 50
-                        anchors.verticalCenter: parent.verticalCenter
-                        onEditingFinished: {
-                            root.controlkey.config.das_delay = text
-                        }
+                    Component.onCompleted: {
+                        if (index == leftBar.currentIndex)
+                            checked = true
                     }
                 }
-
-                Row {
-                    spacing: 5
-                    Text {
-                        font.family: "Loma"
-                        font.pixelSize: 20
-                        color: "white"
-                        text: "重复延迟:"
-                    }
-                    TextField {
-                        height: 25
-                        text: root.controlkey.config.das_repeat
-                        validator: IntValidator {
-                            bottom: 0
-                        }
-                        width: 50
-                        anchors.verticalCenter: parent.verticalCenter
-                        onEditingFinished: {
-                            root.controlkey.config.das_repeat = text
-                        }
-                    }
-                }
-
-                Row {
-                    spacing: 5
-                    Text {
-                        font.family: "Loma"
-                        font.pixelSize: 20
-                        color: "white"
-                        text: "软降延迟:"
-                    }
-                    TextField {
-                        height: 25
-                        text: root.controlkey.config.softDropSpeed
-                        validator: IntValidator {
-                            bottom: 0
-                        }
-                        width: 50
-                        anchors.verticalCenter: parent.verticalCenter
-                        onEditingFinished: {
-                            root.controlkey.config.softDropSpeed = text
-                        }
-                    }
-                }
-
-
-                /*Row{
-     spacing:5
-     Text{
-         font.family:"Loma"
-         font.pixelSize: 20
-          color:"white"
-         text:"锁定延迟:"
-     }
-     TextField{height:25
-         text:root.controlkey.config.lock_delay
-         inputMethodHints:Qt.ImhDigitsOnly
-         width:50
-         anchors.verticalCenter: parent.verticalCenter
-         onEditingFinished:{
-         root.controlkey.config.lock_delay=text
-         }
-     }
-     }*/
-
-
-                /*  Row{
-     spacing:5
-     Text{
-         font.family:"Loma"
-         font.pixelSize: 20
-          color:"white"
-         text:"软降速度:"
-     }
-     TextField{height:25
-         text:root.controlkey.config.softDropSpeed
-         inputMethodHints:Qt.ImhDigitsOnly
-         width:50
-         anchors.verticalCenter: parent.verticalCenter
-         onEditingFinished:{
-         root.controlkey.config.softDropSpeed=text
-         }
-     }
-     }
-
-     Row{
-     spacing:5
-     CheckBox{
-         checked:root.controlkey.config.shadow
-         Text{text:"阴影"
-              font.family:"Loma"
-              font.pixelSize: 20
-              color:"white"
-              anchors.left:parent.right
-              anchors.verticalCenter: parent.verticalCenter
-     }
-         onClicked:{
-             root.controlkey.config.shadow=checked
-         }
-     }
-     }*/
             }
 
-            Column {
-                spacing: 10
-                Row {
-                    Label {
-                        font.family: "Loma"
-                        font.pixelSize: 24
-                        color: "white"
-                        text: "按键设置"
-                    }
-                }
-
-                Row {
-                    spacing: 5
-                    Text {
-                        font.family: "Loma"
-                        font.pixelSize: 20
-                        color: "white"
-                        text: "左移:"
-                    }
-                    TextField {
-                        height: 25
-                        text: root.controlkey.retKey(
-                                  root.controlkey.config.left_move)
-                        width: 50
-                        anchors.verticalCenter: parent.verticalCenter
-                        readOnly: true
-                        Keys.onPressed: {
-                            root.controlkey.config.left_move = ""
-                            if (!root.controlkey.isConflict(event.key)) {
-                                text = root.controlkey.retKey(event.key)
-                                root.controlkey.config.left_move = event.key
+            StackLayout {
+                id: hao1
+                currentIndex: leftBar.currentIndex
+                ScrollView {
+                    visible: true
+                    clip: true
+                    width: parent.width
+                    height: parent.height
+                    ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                    Column {
+                        width: hao1.width
+                        spacing: 10
+                        padding: 20
+                        RowLayout {
+                            width: parent.width
+                            Text {
+                                text: "自移延迟"
+                                color: "black"
+                                font {
+                                    family: "Loma"
+                                    pixelSize: 17
+                                }
                             }
-                            event.accepted = true
+                            SpinBox {
+                                Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                                value: TetrisConfig.dasDelay
+                                editable: true
+                                to: validator.top
+                                validator: IntValidator {
+                                    bottom: 0 // @disable-check M16
+                                }
+                                textFromValue: function (value) {
+                                    return value
+                                }
+                                Layout.preferredHeight: 25
+                                Layout.rightMargin: 30
+                                onValueChanged: {
+                                    TetrisConfig.dasDelay = value
+                                }
+                            }
+                        }
+
+                        RowLayout {
+                            width: parent.width
+                            Text {
+                                text: "重复延迟"
+                                color: "black"
+                                font {
+                                    family: "Loma"
+                                    pixelSize: 17
+                                }
+                            }
+                            SpinBox {
+                                Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                                value: TetrisConfig.arrDelay
+                                editable: true
+                                to: validator.top
+                                validator: IntValidator {
+                                    bottom: 0 // @disable-check M16
+                                }
+                                textFromValue: function (value) {
+                                    return value
+                                }
+                                Layout.preferredHeight: 25
+                                Layout.rightMargin: 30
+                                onValueChanged: {
+                                    TetrisConfig.arrDelay = value
+                                }
+                            }
+                        }
+
+                        RowLayout {
+                            width: parent.width
+                            Text {
+                                text: "软降延迟"
+                                color: "black"
+                                font {
+                                    family: "Loma"
+                                    pixelSize: 17
+                                }
+                            }
+                            SpinBox {
+                                Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                                value: TetrisConfig.softdropDelay
+                                editable: true
+                                to: validator.top
+                                validator: IntValidator {
+                                    bottom: 0 // @disable-check M16
+                                }
+                                textFromValue: function (value) {
+                                    return value
+                                }
+                                Layout.preferredHeight: 25
+                                Layout.rightMargin: 30
+                                onValueChanged: {
+                                    TetrisConfig.softdropDelay= value
+                                }
+                            }
+                        }
+
+                        RowLayout {
+                            width: parent.width
+                            Text {
+                                text: "左移"
+                                color: "black"
+                                font {
+                                    family: "Loma"
+                                    pixelSize: 17
+                                }
+                            }
+                            TextField {
+                                Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                                Layout.preferredHeight: 25
+                                Layout.preferredWidth: 50
+                                Layout.rightMargin: 30
+                                text: keyboard.retKey(
+                                          TetrisConfig.leftKey)
+                                readOnly: true
+                                Keys.onPressed: {
+                                    if (!keyboard.isConflict(
+                                                event.key)) {
+                                        text = keyboard.retKey(event.key)
+                                        TetrisConfig.leftKey = event.key
+                                    }
+                                    event.accepted = true
+                                }
+                            }
+                        }
+
+                        RowLayout {
+                            width: parent.width
+                            Text {
+                                text: "右移"
+                                color: "black"
+                                font {
+                                    family: "Loma"
+                                    pixelSize: 17
+                                }
+                            }
+                            TextField {
+                                Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                                Layout.preferredHeight: 25
+                                Layout.preferredWidth: 50
+                                Layout.rightMargin: 30
+                                text: keyboard.retKey(
+                                          TetrisConfig.rightKey)
+                                readOnly: true
+                                Keys.onPressed: {
+                              //      keyboard.config.right_move = ""
+                                    if (!keyboard.isConflict(
+                                                event.key)) {
+                                        text = keyboard.retKey(event.key)
+                                        TetrisConfig.rightKey = event.key
+                                    }
+                                    event.accepted = true
+                                }
+                            }
+                        }
+
+                        RowLayout {
+                            width: parent.width
+                            Text {
+                                text: "软降"
+                                color: "black"
+                                font {
+                                    family: "Loma"
+                                    pixelSize: 17
+                                }
+                            }
+                            TextField {
+                                Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                                Layout.preferredHeight: 25
+                                Layout.preferredWidth: 50
+                                Layout.rightMargin: 30
+                                text: keyboard.retKey(
+                                          TetrisConfig.softDropKey)
+                                readOnly: true
+                                Keys.onPressed: {
+                                   // keyboard.config.soft_drop = ""
+                                    if (!keyboard.isConflict(
+                                                event.key)) {
+                                        text = keyboard.retKey(event.key)
+                                        TetrisConfig.softDropKey = event.key
+                                    }
+                                    event.accepted = true
+                                }
+                            }
+                        }
+
+                        RowLayout {
+                            width: parent.width
+                            Text {
+                                text: "硬降"
+                                color: "black"
+                                font {
+                                    family: "Loma"
+                                    pixelSize: 17
+                                }
+                            }
+                            TextField {
+                                Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                                Layout.preferredHeight: 25
+                                Layout.preferredWidth: 50
+                                Layout.rightMargin: 30
+                                text: keyboard.retKey(
+                                          TetrisConfig.harddropKey)
+                                readOnly: true
+                                Keys.onPressed: {
+                                    keyboard.config.hard_drop = ""
+                                    if (!keyboard.isConflict(
+                                                event.key)) {
+                                        text = keyboard.retKey(event.key)
+                                        TetrisConfig.harddropKey = event.key
+                                    }
+                                    event.accepted = true
+                                }
+                            }
+                        }
+
+                        RowLayout {
+                            width: parent.width
+                            Text {
+                                text: "顺时针旋转"
+                                color: "black"
+                                font {
+                                    family: "Loma"
+                                    pixelSize: 17
+                                }
+                            }
+                            TextField {
+                                Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                                Layout.preferredHeight: 25
+                                Layout.preferredWidth: 50
+                                Layout.rightMargin: 30
+                                text: keyboard.retKey(
+                                         TetrisConfig.ccwKey)
+                                readOnly: true
+                                Keys.onPressed: {
+                                    keyboard.config.rotate_normal = ""
+                                    if (!keyboard.isConflict(
+                                                event.key)) {
+                                        text = keyboard.retKey(event.key)
+                                       TetrisConfig.ccwKey = event.key
+                                    }
+                                    event.accepted = true
+                                }
+                            }
+                        }
+
+                        RowLayout {
+                            width: parent.width
+                            Text {
+                                text: "逆时针旋转"
+                                color: "black"
+                                font {
+                                    family: "Loma"
+                                    pixelSize: 17
+                                }
+                            }
+                            TextField {
+                                Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                                Layout.preferredHeight: 25
+                                Layout.preferredWidth: 50
+                                Layout.rightMargin: 30
+                                text: keyboard.retKey(
+                                          TetrisConfig.cwKey)
+                                readOnly: true
+                                Keys.onPressed: {
+                                    keyboard.config.rotate_reverse = ""
+                                    if (!keyboard.isConflict(
+                                                event.key)) {
+                                        text = keyboard.retKey(event.key)
+                                        TetrisConfig.cwKey = event.key
+                                    }
+                                    event.accepted = true
+                                }
+                            }
+                        }
+
+                        RowLayout {
+                            width: parent.width
+                            Text {
+                                text: "暂存"
+                                color: "black"
+                                font {
+                                    family: "Loma"
+                                    pixelSize: 17
+                                }
+                            }
+                            TextField {
+                                Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                                Layout.preferredHeight: 25
+                                Layout.preferredWidth: 50
+                                Layout.rightMargin: 30
+                                text: keyboard.retKey(
+                                          TetrisConfig.holdKey)
+                                readOnly: true
+                                Keys.onPressed: {
+                                    keyboard.config.hold = ""
+                                    if (!keyboard.isConflict(
+                                                event.key)) {
+                                        text = keyboard.retKey(event.key)
+                                        TetrisConfig.holdKey = event.key
+                                    }
+                                    event.accepted = true
+                                }
+                            }
+                        }
+
+                        RowLayout {
+                            width: parent.width
+                            Text {
+                                text: "重开"
+                                color: "black"
+                                font {
+                                    family: "Loma"
+                                    pixelSize: 17
+                                }
+                            }
+                            TextField {
+                                Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                                Layout.preferredHeight: 25
+                                Layout.preferredWidth: 50
+                                Layout.rightMargin: 30
+                                text: keyboard.retKey(
+                                          TetrisConfig.restartKey)
+                                readOnly: true
+                                Keys.onPressed: {
+                                    keyboard.config.restart = ""
+                                    if (!keyboard.isConflict(
+                                                event.key)) {
+                                        text = keyboard.retKey(event.key)
+                                        TetrisConfig.restartKey = event.key
+                                    }
+                                    event.accepted = true
+                                }
+                            }
+                        }
+
+                        RowLayout {
+                            width: parent.width
+                            Text {
+                                text: "回放"
+                                color: "black"
+                                font {
+                                    family: "Loma"
+                                    pixelSize: 17
+                                }
+                            }
+                            TextField {
+                                Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                                Layout.preferredHeight: 25
+                                Layout.preferredWidth: 50
+                                Layout.rightMargin: 30
+                                text: keyboard.retKey(
+                                          TetrisConfig.replay)
+                                readOnly: true
+                                Keys.onPressed: {
+                                    keyboard.config.replay = ""
+                                    if (!keyboard.isConflict(
+                                                event.key)) {
+                                        text = keyboard.retKey(event.key)
+                                        TetrisConfig.replay = event.key
+                                    }
+                                    event.accepted = true
+                                }
+                            }
+                        }
+
+                        RowLayout {
+                            width: parent.width
+                            Text {
+                                text: "机器人托管"
+                                color: "black"
+                                font {
+                                    family: "Loma"
+                                    pixelSize: 17
+                                }
+                            }
+                            TextField {
+                                Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                                Layout.preferredHeight: 25
+                                Layout.preferredWidth: 50
+                                Layout.rightMargin: 30
+                                text: keyboard.retKey(
+                                          TetrisConfig.bot)
+                                readOnly: true
+                                Keys.onPressed: {
+                                    //keyboard.config.ai = ""
+                                    if (!keyboard.isConflict(
+                                                event.key)) {
+                                        text = keyboard.retKey(event.key)
+                                        TetrisConfig.bot = event.key
+                                    }
+                                    event.accepted = true
+                                }
+                            }
                         }
                     }
-                }
-
-                Row {
-                    spacing: 5
-                    Text {
-                        font.family: "Loma"
-                        font.pixelSize: 20
-                        text: "右移:"
-                        color: "white"
-                    }
-                    TextField {
-                        height: 25
-                        focus: true
-                        text: root.controlkey.retKey(
-                                  root.controlkey.config.right_move)
-                        width: 50
-                        anchors.verticalCenter: parent.verticalCenter
-                        readOnly: true
-                        Keys.onPressed: {
-                            root.controlkey.config.right_move = ""
-                            if (!root.controlkey.isConflict(event.key)) {
-                                text = root.controlkey.retKey(event.key)
-                                root.controlkey.config.right_move = event.key
-                            }
-                            event.accepted = true
-                        }
-                    }
-                }
-
-                Row {
-                    spacing: 5
-                    Text {
-                        font.family: "Loma"
-                        font.pixelSize: 20
-                        text: "软降:"
-                        color: "white"
-                    }
-                    TextField {
-                        height: 25
-                        text: root.controlkey.retKey(
-                                  root.controlkey.config.soft_drop)
-                        width: 50
-                        anchors.verticalCenter: parent.verticalCenter
-                        readOnly: true
-                        Keys.onPressed: {
-                            root.controlkey.config.soft_drop = ""
-                            if (!root.controlkey.isConflict(event.key)) {
-                                text = root.controlkey.retKey(event.key)
-                                root.controlkey.config.soft_drop = event.key
-                            }
-                            event.accepted = true
-                        }
-                    }
-                }
-
-                Row {
-                    spacing: 5
-                    Text {
-                        font.family: "Loma"
-                        font.pixelSize: 20
-                        text: "硬降:"
-                        color: "white"
-                    }
-                    TextField {
-                        height: 25
-                        text: root.controlkey.retKey(
-                                  root.controlkey.config.hard_drop)
-                        width: 50
-                        anchors.verticalCenter: parent.verticalCenter
-                        readOnly: true
-                        Keys.onPressed: {
-                            root.controlkey.config.hard_drop = ""
-                            if (!root.controlkey.isConflict(event.key)) {
-                                text = root.controlkey.retKey(event.key)
-                                root.controlkey.config.hard_drop = event.key
-                            }
-                            event.accepted = true
-                        }
-                    }
-                }
-
-                Row {
-                    spacing: 5
-                    Text {
-                        font.family: "Loma"
-                        font.pixelSize: 20
-                        text: "顺时针旋转:"
-                        color: "white"
-                    }
-                    TextField {
-                        height: 25
-                        text: root.controlkey.retKey(
-                                  root.controlkey.config.rotate_normal)
-                        width: 50
-                        anchors.verticalCenter: parent.verticalCenter
-                        readOnly: true
-                        Keys.onPressed: {
-                            root.controlkey.config.rotate_normal = ""
-                            if (!root.controlkey.isConflict(event.key)) {
-                                text = root.controlkey.retKey(event.key)
-                                root.controlkey.config.rotate_normal = event.key
-                            }
-                            event.accepted = true
-                        }
-                    }
-                }
-
-                Row {
-                    spacing: 5
-                    Text {
-                        font.family: "Loma"
-                        font.pixelSize: 20
-                        text: "逆时针旋转:"
-                        color: "white"
-                    }
-                    TextField {
-                        height: 25
-                        text: root.controlkey.retKey(
-                                  root.controlkey.config.rotate_reverse)
-                        width: 50
-                        anchors.verticalCenter: parent.verticalCenter
-                        readOnly: true
-                        Keys.onPressed: {
-                            root.controlkey.config.rotate_reverse = ""
-                            if (!root.controlkey.isConflict(event.key)) {
-                                text = root.controlkey.retKey(event.key)
-                                root.controlkey.config.rotate_reverse = event.key
-                            }
-                            event.accepted = true
-                        }
-                    }
-                }
-
-                Row {
-                    spacing: 5
-                    Text {
-                        font.family: "Loma"
-                        font.pixelSize: 20
-                        text: "暂存:"
-                        color: "white"
-                    }
-                    TextField {
-                        height: 25
-                        text: root.controlkey.retKey(
-                                  root.controlkey.config.hold)
-                        width: 50
-                        anchors.verticalCenter: parent.verticalCenter
-                        readOnly: true
-                        Keys.onPressed: {
-                            root.controlkey.config.hold = ""
-                            if (!root.controlkey.isConflict(event.key)) {
-                                text = root.controlkey.retKey(event.key)
-                                root.controlkey.config.hold = event.key
-                            }
-                            event.accepted = true
-                        }
-                    }
-                }
-
-                Row {
-                    spacing: 5
-                    Text {
-                        font.family: "Loma"
-                        font.pixelSize: 20
-                        text: "重新开始:"
-                        color: "white"
-                    }
-                    TextField {
-                        height: 25
-                        text: root.controlkey.retKey(
-                                  root.controlkey.config.restart)
-                        width: 50
-                        anchors.verticalCenter: parent.verticalCenter
-                        readOnly: true
-                        Keys.onPressed: {
-                            root.controlkey.config.restart = ""
-                            if (!root.controlkey.isConflict(event.key)) {
-                                text = root.controlkey.retKey(event.key)
-                                root.controlkey.config.restart = event.key
-                            }
-                            event.accepted = true
-                        }
-                    }
-                }
-
-                Row {
-                    spacing: 5
-                    Text {
-                        font.family: "Loma"
-                        font.pixelSize: 20
-                        text: "回放:"
-                        color: "white"
-                    }
-                    TextField {
-                        height: 25
-                        text: root.controlkey.retKey(
-                                  root.controlkey.config.replay)
-                        width: 50
-                        anchors.verticalCenter: parent.verticalCenter
-                        readOnly: true
-                        Keys.onPressed: {
-                            root.controlkey.config.replay = ""
-                            if (!root.controlkey.isConflict(event.key)) {
-                                text = root.controlkey.retKey(event.key)
-                                root.controlkey.config.replay = event.key
-                            }
-                            event.accepted = true
-                        }
-                    }
-                }
-
-
-                /*  Row{
-         spacing:5
-         Text{
-             font.family:"Loma"
-             font.pixelSize: 20
-             text:"AI:"
-             color:"white"
-         }
-         TextField{height:25
-           text:root.controlkey.retKey(root.controlkey.config.ai)
-           width:50
-           anchors.verticalCenter: parent.verticalCenter
-           readOnly:true
-           Keys.onPressed: {
-               root.controlkey.config.ai=""
-               if(!root.controlkey.isConflict(event.key)){
-               text=root.controlkey.retKey(event.key)
-                   root.controlkey.config.ai=event.key
-                   }
-               event.accepted=true
-           }
-         }
-         }*/
-            }
-
-            Column {
-                spacing: 10
-
-                Label {
-                    font.family: "Loma"
-                    font.pixelSize: 24
-                    text: "录像回放◀"
-                    color: "white"
                 }
 
                 Column {
+                    width: parent.width
                     spacing: 10
-                    ScrollView {
-                        id: view
-                        width: root.width - 10
-                        height: 100
-                        clip: true
-                        TextArea {
-                            id: replayData
-                            wrapMode: TextEdit.Wrap
-                            selectByMouse: true
-                            font.pixelSize: 14
-                            background: Rectangle {
-                                width: view.width
-                                height: view.height
-                                color: "white"
+                    padding: 20
+                    RowLayout {
+                        width: parent.width
+                        Text {
+                            text: "阴影"
+                            color: "black"
+                            font {
+                                family: "Loma"
+                                pixelSize: 17
                             }
-                            text: ""
+                        }
+                        Switch {
+                            Layout.preferredHeight: 25
+                            Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                            Layout.rightMargin: 30
+                            checked: config.shadow
+                            onCheckedChanged: config.shadow = checked
                         }
                     }
+                    RowLayout {
+                        width: parent.width
+                        Text {
+                            text: "移动旋转过渡"
+                            color: "black"
+                            font {
+                                family: "Loma"
+                                pixelSize: 17
+                            }
+                        }
+                        Switch {
+                            Layout.preferredHeight: 25
+                            Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                            Layout.rightMargin: 30
+                            checked: config.operTransition
+                            onCheckedChanged: config.operTransition = checked
+                        }
+                    }
+                    RowLayout {
+                        width: parent.width
+                        Text {
+                            text: "机器人耗费时间"
+                            color: "black"
+                            font {
+                                family: "Loma"
+                                pixelSize: 17
+                            }
+                        }
+                        SpinBox {
+                            Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                            value: TetrisConfig.botTimeCost
+                            editable: true
+                            to: validator.top
+                            validator: IntValidator {
+                                bottom: 1 // @disable-check M16
+                            }
+                            textFromValue: function (value) {
+                                return value
+                            }
+                            Layout.preferredHeight: 25
+                            Layout.rightMargin: 30
+                            onValueChanged: {
+                                TetrisConfig.botTimeCost = value
+                            }
+                        }
+                    }
+                }
 
-                    Button {
-                        width: 60
-                        height: 30
-                        text: "播放"
-                        onClicked: {
-                            root.visible = !root.visible
-                            if (root.visible == false) {
+                Column {
+                    padding: 20
+                    spacing: 10
+                    width: parent.width
+                    height: parent.height
+                    Label {
+                        font.family: "Loma"
+                        font.pixelSize: 17
+                        text: "录像回放◀"
+                        color: "black"
+                    }
+                    Column {
+                        spacing: 10
+                        width: parent.width - parent.padding
+                        ScrollView {
+                            id: view
+                            width: parent.width - 10
+                            height: 100
+                            clip: true
+                            TextArea {
+                                id: replayData
+                                wrapMode: TextEdit.Wrap
+                                selectByMouse: true
+                                font.pixelSize: 14
+                                background: Rectangle {
+                                    width: view.width
+                                    height: view.height
+                                    color: "transparent"
+                                    border.width: 1
+                                }
+                                text: ""
+                            }
+                        }
+
+                        Button {
+                            width: 60
+                            height: 30
+                            text: "播放"
+                            onClicked: {
+                                root.replayCall()
                                 if (tetris != null) {
                                     tetris.focus = true
                                     tetris.replay(replayData.text)
@@ -512,41 +572,6 @@ Item {
                         }
                     }
                 }
-
-
-                /*   Row{
-         spacing:5
-         Text{
-             font.family:"Loma"
-             font.pixelSize: 20
-             text:"方块风格:"
-             color:"white"
-         }
-         TextField{height:25
-           text:root.controlkey.config.blockstyle
-           width:50
-           anchors.verticalCenter: parent.verticalCenter
-           onEditingFinished:{
-           root.controlkey.config.blockstyle=text
-           }
-         }
-         }
-
-
-         Row{
-         spacing:5
-         Text{
-             font.family:"Loma"
-             font.pixelSize: 20
-             text:"背景色:"
-             color:"white"
-         }
-         TextField{height:25
-           text:root.controlkey.config.background
-           width:50
-           anchors.verticalCenter: parent.verticalCenter
-         }
-         }*/
             }
         }
     }

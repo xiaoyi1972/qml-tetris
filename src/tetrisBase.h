@@ -254,28 +254,33 @@ public:
         pos.y += _y;
     }
 
-    std::tuple<QVector<Pos>, QVector<int>> attachs(TetrisMapEx &map)
+    std::tuple<QVector<Pos>, QVector<int>> attachs(TetrisMapEx &map, const Pos &_pos, char _rotateState)
     {
         QVector<Pos> change;
-        const auto &data = rotateDatas[type][rotateState];
+        const auto &data = rotateDatas[type][_rotateState];
         auto size = data.size();
         for (auto i = 0; i < size; i++) {
-            auto dataI = pos.x > 0 ? data.at(i) << pos.x : data.at(i) >> std::abs(pos.x);
-            map.data[i + pos.y] |= dataI;
+            auto dataI = _pos.x > 0 ? data.at(i) << _pos.x : data.at(i) >> std::abs(_pos.x);
+            map.data[i + _pos.y] |= dataI;
             if (dataI) {
-                map.roof = std::min(pos.y + i, map.roof);
+                map.roof = std::min(_pos.y + i, map.roof);
             }
         }
         for (int x = 0; x < size; x++)
             for (int y = 0; y < size; y++) {
                 if (full(y, x)) {
                     map.count++;
-                    change.append(Pos{pos.y + y, pos.x + x});
-                    map.colorDatas[pos.y + y][pos.x + x] = type;
-                    map.top[pos.x + x] = std::min<char>(pos.y + y, map.top[pos.x + x]);
+                    change.append(Pos{_pos.y + y, _pos.x + x});
+                    map.colorDatas[_pos.y + y][_pos.x + x] = type;
+                    map.top[_pos.x + x] = std::min<char>(_pos.y + y, map.top[_pos.x + x]);
                 }
             }
         return {change, map.clear()};
+    }
+
+    std::tuple<QVector<Pos>, QVector<int>> attachs(TetrisMapEx &map)
+    {
+        return attachs(map, pos, rotateState);
     }
 
     int attach(TetrisMap &map)
@@ -401,7 +406,11 @@ public:
         auto mini = 0, sum = 0;
         auto &_x = pos.x;
         auto &_y = pos.y;
-#define occupied(y,x) int(!full(y, x) && map(_y + y, _x + x))
+
+        auto occupied = [&](int y, int x) {
+            return int(!full(y, x) && map(_y + y, _x + x));
+        };
+
         mini = occupied(0, 1) + occupied(1, 0) + occupied(2, 1) + occupied(1, 2);
         sum = map(_y, _x) + map(_y + 2, _x) + map(_y, _x + 2) + map(_y + 2, _x + 2);
         return{sum > 2, mini == 1};
@@ -433,22 +442,12 @@ public:
 };
 
 
-struct info {
+struct searchNode {
     TetrisNode node;
     int count;
-    info(TetrisNode &_node, int _count)
-    {
-        node = _node;
-        count = _count;
-    }
-
-    info(TetrisNode &&_node, int _count)
-    {
-        node = _node;
-        count = _count;
-    }
-
-    bool operator==(const info &other) const
+    searchNode(TetrisNode &_node, int _count): node{_node}, count(_count) {}
+    searchNode(TetrisNode &&_node, int _count): node{_node}, count(_count) {}
+    bool operator==(const searchNode &other) const
     {
         return const_cast<TetrisNode &>(node).cellsEqual() == const_cast<TetrisNode &>(other.node).cellsEqual();
     }
@@ -464,7 +463,7 @@ inline uint qHash(const TetrisNode &key, uint seed)
     return seed;
 }
 
-inline uint qHash(const info &key, uint seed)
+inline uint qHash(const searchNode &key, uint seed)
 {
     seed = const_cast<TetrisNode &>(key.node).cellsEqual();
     return seed;
@@ -478,7 +477,6 @@ public:
     {
         seed = _seed;
         rand.seed(seed);
-        // qsrand(seed);        //设置随机数种子
     }
 
     void getBag()
@@ -546,7 +544,7 @@ public:
                 _cur = TetrisNode{rand->getOne()};
                 res = 2;
             } else {
-                qSwap(type, _curType);
+                std::swap(type, _curType);
                 _cur = TetrisNode{_curType};
                 res = 1;
             }

@@ -8,7 +8,6 @@ Item {
     width: root.tetrisGame.blockSize * root.tetrisGame.maxColumn
     height: root.tetrisGame.blockSize * (root.tetrisGame.maxRow + root.tetrisGame.RowOver)
     property var heightInline: root.tetrisGame.blockSize * root.tetrisGame.maxRow
-    property var controlkey: null
     property var tetrisGame: null
     property var tetris: null
     property alias feildLayer: feildLayer
@@ -36,11 +35,23 @@ Item {
                 y: root.tetrisGame.blockSize * (root.tetrisGame.maxRow)
             }
             PathLine {
-                x: root.tetrisGame.blockSize * root.tetrisGame.maxColumn
-                y: root.tetrisGame.blockSize * (root.tetrisGame.maxRow)
+                relativeX: root.tetrisGame.blockSize * root.tetrisGame.maxColumn
+                relativeY: 0
             }
             PathLine {
-                x: root.tetrisGame.blockSize * root.tetrisGame.maxColumn
+                relativeX: 0
+                y: 0
+            }
+            PathMove {
+                relativeX: 0
+                relativeY: root.tetrisGame.blockSize * (root.tetrisGame.maxRow)
+            }
+            PathLine {
+                relativeX: 10
+                relativeY: 0
+            }
+            PathLine {
+                relativeX: 0
                 y: 0
             }
         }
@@ -107,12 +118,14 @@ gl_FragColor =vec4(tex.rgb,tex.a);
         property int rs: 0
         property int xyDuration: 50
         property int rDuration: 60
+        property bool banAni: true
         x: 0
         y: 0
         transformOrigin: Item.Center
         rotation: 0
         Behavior on x {
             id: xb
+            enabled: fk.banAni && setscene.config.operTransition
             SmoothedAnimation {
                 duration: Math.ceil(
                               fk.xyDuration / Math.ceil(
@@ -121,6 +134,7 @@ gl_FragColor =vec4(tex.rgb,tex.a);
         }
         Behavior on y {
             id: yb
+            enabled: fk.banAni && setscene.config.operTransition
             SmoothedAnimation {
                 duration: Math.ceil(
                               fk.xyDuration / Math.ceil(
@@ -129,15 +143,14 @@ gl_FragColor =vec4(tex.rgb,tex.a);
         }
         Behavior on rotation {
             id: rsb
+            enabled: fk.banAni && setscene.config.operTransition
             RotationAnimation {
                 duration: fk.rDuration
                 direction: RotationAnimator.Shortest
             }
         }
         function toggleBehavior(is) {
-            xb.enabled = is
-            yb.enabled = is
-            rsb.enabled = is
+            fk.banAni = is
         }
     }
 
@@ -145,13 +158,15 @@ gl_FragColor =vec4(tex.rgb,tex.a);
         id: shadow
         property int minoType: -1
         property var board: []
-        property int xyDuration: 50
+        property int xyDuration:  50
+        property bool banAni: true
         x: 0
         y: 0
         transformOrigin: Item.Center
         rotation: 0
         Behavior on x {
             id: xb1
+            enabled: shadow.banAni && setscene.config.operTransition
             SmoothedAnimation {
                 duration: Math.ceil(
                               shadow.xyDuration / Math.ceil(
@@ -161,6 +176,7 @@ gl_FragColor =vec4(tex.rgb,tex.a);
         }
         Behavior on y {
             id: yb1
+            enabled: shadow.banAni && setscene.config.operTransition
             SmoothedAnimation {
                 duration: Math.ceil(
                               shadow.xyDuration / Math.ceil(
@@ -170,14 +186,41 @@ gl_FragColor =vec4(tex.rgb,tex.a);
         }
 
         function toggleBehavior(is) {
-            xb1.enabled = is
-            yb1.enabled = is
+            shadow.banAni = is
+        }
+    }
+
+    Item {
+        id: trashStatus
+        height: displayBorder.height
+        width: 10
+        anchors.top: displayBorder.top
+        anchors.left: displayBorder.right
+        Rectangle {
+            id: factTrash
+            height: (Math.min(
+                         tetris.trash,
+                         root.tetrisGame.maxRow) / root.tetrisGame.maxRow) * parent.height
+            width: parent.width
+            color: "orange"
+            anchors.bottom: parent.bottom
+        }
+        Rectangle {
+            Behavior on height {
+                SmoothedAnimation {
+                    velocity: 150
+                }
+            }
+            height: factTrash.height
+            width: parent.width
+            color: "red"
+            anchors.bottom: parent.bottom
         }
     }
 
     Column {
-        anchors.top: displayBorder.top
-        anchors.left: root.right
+        anchors.top: trashStatus.top //displayBorder.top
+        anchors.left: trashStatus.right ///root.right
         anchors.margins: 5
         anchors.topMargin: 0
         spacing: 10
@@ -239,7 +282,6 @@ gl_FragColor =vec4(tex.rgb,tex.a);
         Text {
             id: effectClear
             font.pointSize: 16
-            //    font.bold: true
             text: ""
             horizontalAlignment: Text.AlignRight
         }
@@ -247,8 +289,6 @@ gl_FragColor =vec4(tex.rgb,tex.a);
         Text {
             id: clearText
             font.pointSize: 16
-            // visible: false
-            //font.bold: true
             text: ""
             horizontalAlignment: Text.AlignRight
         }
@@ -271,23 +311,6 @@ gl_FragColor =vec4(tex.rgb,tex.a);
             onClicked: {
                 tetris.restart()
                 tetris.focus = true
-            }
-        }
-
-        Button {
-            width: 50
-            height: 30
-            anchors {
-                right: parent.right
-                verticalCenter: parent.verticalCenter
-            }
-            text: "设置"
-            onClicked: {
-                setscene.visible = !setscene.visible
-                if (setscene.visible === false) {
-                    tetris.setKeyboard(controlkey.config)
-                    tetris.focus = true
-                }
             }
         }
     }

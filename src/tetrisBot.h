@@ -37,7 +37,7 @@ struct Status {
     bool cutB2b = false;
     bool operator<(const Status &other) const
     {
-            return this->value < other.value;
+        return this->value < other.value;
     }
 
 };
@@ -56,7 +56,7 @@ struct EvalResult {
 QVector<TetrisNode> search(TetrisNode &, TetrisMap &);
 auto make_path(TetrisNode &, TetrisNode &, TetrisMap &, bool)->QVector<Oper>;
 TetrisBot::EvalResult evalute(TetrisNode &, TetrisMap &, int, int);
-TetrisBot::Status get(const TetrisBot::EvalResult &, TetrisBot::Status &, Piece, QVector<Piece> *, int);
+TetrisBot::Status get(const TetrisBot::EvalResult &, TetrisBot::Status &, Piece);
 }
 
 class TreeNode;
@@ -67,7 +67,7 @@ public:
     TreeContext() {};
     ~TreeContext();
     using Result = std::tuple<TetrisNode, bool, bool>;
-    void createRoot(TetrisNode &, TetrisMap &, QVector<Piece> &, Piece, int, int);
+    void createRoot(TetrisNode &, TetrisMap &, QVector<Piece> &, Piece, int, int, int);
     void treeDelete(TreeNode *);
     void run();
     Result empty();
@@ -107,7 +107,7 @@ public:
     TreeNode(TreeContext *, TreeNode *, TetrisNode &, TetrisMap &, int, Piece, bool,  EvalParm &);
     void printInfoReverse(TetrisMap &, TreeNode *);
     TreeNode *generateChildNode(TetrisNode &, bool, Piece, bool);
-    void search(bool hold_opposite = false);
+    void search();
     void search_hold(bool op = false, bool noneFirstHold = false);
     bool eval();
     void run();

@@ -27,40 +27,38 @@ void Task::back(QThread *td)
 
 void Task::pressHandle(int e)
 {
-//    qDebug() << "pressed" << e;
     auto &_key = e;
-    if (_key == Tetris:: keyconfig.leftKey) {
+    if (_key == Tetris:: keyconfig["leftKey"]) {
         if (rightKey.press)
             rightKey.switchStop();
         else
             rightKey.keyUp();
         leftKey.keyDown();
-    } else if (_key == Tetris:: keyconfig.rightKey) {
+    } else if (_key == Tetris:: keyconfig["rightKey"]) {
         if (leftKey.press)
             leftKey.switchStop();
         else
             leftKey.keyUp();
         rightKey.keyDown();
-    } else if (_key == Tetris:: keyconfig.softDropKey)
+    } else if (_key == Tetris:: keyconfig["softDropKey"])
         softDropKey.keyDown();
 }
 void Task::releaseHandle(int e)
 {
-  //  qDebug() << "release" << e;
     auto &_key = e;
-    if (_key == Tetris:: keyconfig.leftKey) {
+    if (_key == Tetris:: keyconfig["leftKey"]) {
         leftKey.keyUp();
         if (rightKey.switchStopFlag) {
             rightKey.keyUp();
             rightKey.keyDown();
         }
-    } else if (_key == Tetris:: keyconfig.rightKey) {
+    } else if (_key == Tetris:: keyconfig["rightKey"]) {
         rightKey.keyUp();
         if (leftKey.switchStopFlag) {
             leftKey.keyUp();
             leftKey.keyDown();
         }
-    } else if (_key == Tetris:: keyconfig.softDropKey)
+    } else if (_key == Tetris:: keyconfig["softDropKey"])
         softDropKey.keyUp();
 }
 
@@ -95,7 +93,7 @@ int Task::setTimeOut(const std::function<void()> &func, int delay)
 void Task::clearTimeout(int timerId)
 {
     if (thread() != QThread::currentThread()) {
-            qDebug()<<"no same";
+        qDebug() << "no same";
         QMetaObject::invokeMethod(this, "clearTimeout", Qt::QueuedConnection, Q_ARG(int, timerId));
         return;
     }
@@ -158,8 +156,26 @@ void Task::timerEvent(QTimerEvent *event)
 }
 
 MyThread Tetris::td;
-Task Tetris::task;
-Tetris::keyConfig Tetris:: keyconfig;
+//Task Tetris::task;
+QQmlPropertyMap Tetris:: keyconfig;
+bool initConfig = std::invoke([]()
+{
+    Tetris::keyconfig.insert("leftKey", QVariant(int(Qt::Key_Left)));
+    Tetris::keyconfig.insert("rightKey", QVariant(int(Qt::Key_Right)));
+    Tetris::keyconfig.insert("softDropKey", QVariant(int(Qt::Key_Down)));
+    Tetris::keyconfig.insert("harddropKey", QVariant(int(Qt::Key_Space)));
+    Tetris::keyconfig.insert("cwKey", QVariant(int(Qt::Key_Z)));
+    Tetris::keyconfig.insert("ccwKey", QVariant(int(Qt::Key_X)));
+    Tetris::keyconfig.insert("holdKey", QVariant(int(Qt::Key_C)));
+    Tetris::keyconfig.insert("restartKey", QVariant(int(Qt::Key_R)));
+    Tetris::keyconfig.insert("dasDelay", QVariant(int(72)));
+    Tetris::keyconfig.insert("arrDelay", QVariant(int(17)));
+    Tetris::keyconfig.insert("softdropDelay", QVariant(int(8)));
+    Tetris::keyconfig.insert("replay", QVariant(int(Qt::Key_Q)));
+    Tetris::keyconfig.insert("bot", QVariant(int(Qt::Key_W)));
+    Tetris::keyconfig.insert("botTimeCost", QVariant(int(100)));
+    return true;
+});
 
 Tetris::Tetris()
 {
@@ -187,22 +203,22 @@ void Tetris::keyPressEvent(QKeyEvent *event)
         return;
     auto _key = event->key();
     if (!deaded) {
-        if (_key == keyconfig.harddropKey)
+        if (_key == keyconfig["harddropKey"])
             harddrop();
-        else if (_key == keyconfig.cwKey)
+        else if (_key == keyconfig["cwKey"])
             cw();
-        else if (_key == keyconfig.ccwKey)
+        else if (_key == keyconfig["ccwKey"])
             ccw();
-        else  if (_key == keyconfig.holdKey)
+        else  if (_key == keyconfig["holdKey"])
             hold();
     }
-    if (_key == keyconfig.restartKey) {
+    if (_key == keyconfig["restartKey"]) {
         task.clearInterval(handle);
         isReplay = false;
         restart();
-    } else if (_key == keyconfig.replay) {
+    } else if (_key == keyconfig["replay"]) {
         replay();
-    } else if (_key == Qt::Key_W) {
+    } else if (_key == keyconfig["bot"]) {
         tg = !tg;
         if (tg) {
             botCall();
@@ -226,9 +242,14 @@ void Tetris::keyPressEvent(QKeyEvent *event)
         map.update();
         passMap();
         passPiece(true);
-    } else if (_key == Qt::Key_A) {
+    } /*else if (_key == Qt::Key_A) {
         TetrisBot::evalute(tn, map, 0, 0);
-    } else {
+        qDebug() << Tool::printNode(tn);
+        sendAttack(4);
+    } else if (_key == Qt::Key_B) {
+        getTrash(3);
+        getTrash(1);
+    }*/ else {
         emit the(_key);
     }
 }
@@ -262,6 +283,7 @@ void Tetris::restart()
     startTime = std::chrono::high_resolution_clock::now();
     deaded = false;
     digRowsEnd = 100;
+    gamedata.trashLines.clear();
     if (!isReplay) {
         randSys = Random{};
         record = Recorder{randSys.seed};
@@ -270,6 +292,7 @@ void Tetris::restart()
     holdSys = Hold {&randSys};
     map = TetrisMapEx{10, 22};
     tn =   TetrisNode{randSys.getOne()};
+    setTrash(0);
     gamedata = gameData{};
     emit restartGame();
     ExampleMap();
@@ -334,51 +357,51 @@ void Tetris::softdrop()
 
 void Tetris::harddrop()
 {
+    auto addLines = [&](int rows) {
+        auto row = 0b1111111111;
+        auto num = 0;
+        num = int(randSys.rand.generate() % 10);
+        row &= ~(1 << num);
+        for (auto i = 0; i < rows; i++) {
+            memcpy(map.data, map.data + 1, (map.height - 1) * sizeof(int));
+            map.data[map.height - 1 ] = row;
+            map.colorDatas.remove(0);
+            map.colorDatas.push_back(QVector<Piece>(map.width).fill(Piece::Trash));
+            map.colorDatas[map.height - 1][num] = Piece::None;
+        }
+    };
 
     if (!isReplay)
         record.add(Oper::HardDrop, timeRecord());
     holdSys.reset();
-
-    //mutex.lock();
     auto dropDis = tn.getDrop(map);
     if (dropDis > 0)
         tn.lastRotate = false;
     tn.pos.y += dropDis;
-
     if (tn.type == Piece::T) {
         auto [spin, mini] = tn.corner3(map);
-        if (spin) {
+        if (spin)
             tn.typeTSpin = mini ? TSpinType::TSpinMini : TSpinType::TSpin;
-        }
     }
-    /*   if (tn.typeTSpin == TSpinType::TspinMini)
-             qDebug() << "mini";*/
-
     auto [pieceChanges, clear] = tn.attachs(map);
-    //map.test();
+    auto attack = sendTrash(std::tuple<TSpinType, int> {tn.typeTSpin, clear.size()});
     auto isTSpin = (tn.typeTSpin != TSpinType::None && tn.lastRotate);
     if (clear.size() == 4 || (clear.size() > 0 && tn.typeTSpin != TSpinType::None))
         gamedata.b2b++;
     else if (clear.size() > 0)
         gamedata.b2b = 0;
     gamedata.combo = clear.size() > 0 ? gamedata.combo + 1 : 0;
-
-    // qDebug() << "b2b:" << !!gamedata.b2b << " combo:" << gamedata.combo;
     gamedata.pieces++;
     gamedata.clear += clear.size();
     auto pieceType = tn.type;
     auto piece = randSys.getOne();
     passNext();
     tn = TetrisNode{piece};
-
-    //mutex.unlock();
-
-    for (auto &row_i : clear) {//for dig mod
-        if (((map.height - 11) + (10 - digRows)) < row_i && row_i < map.height) {
-            digRows--;
+    if (digMod && digRowsEnd > 0) {//for dig mod
+        for (auto &row_i : clear) {
+            if (((map.height - 11) + (10 - digRows)) < row_i && row_i < map.height)
+                digRows--;
         }
-    }
-    if (digMod && digRowsEnd > 0) {
         if (clear.size() == 0) {
             auto needDigRows = 10 - digRows;
             digRowsEnd -= needDigRows;
@@ -386,35 +409,63 @@ void Tetris::harddrop()
             digRows = 10;
             map.update(false);
             passMap();
-            for (auto &piecePos : pieceChanges) {
+            for (auto &piecePos : pieceChanges)
                 piecePos.x -= needDigRows;
-            }
         }
     }
-
+    mutex.lock();
+    auto noClear = (clear.size() == 0);
+    auto addCount = 0;
+    while (!gamedata.trashLines.empty()) {
+        auto first = gamedata.trashLines.begin();
+        if (!noClear) {
+            if (*first < attack && (attack -= *first)) {
+                setTrash(gamedata.trashLinesCount -  gamedata.trashLines.takeFirst());
+            } else {
+                setTrash(gamedata.trashLinesCount - attack);
+                attack = (*first -= attack) ? 0 : gamedata.trashLines.takeFirst();
+                if (!noClear)
+                    break;
+            }
+        } else {
+            auto every = gamedata.trashLines.takeFirst();
+            addCount += every;
+            addLines(every);
+        }
+    }
+    if (noClear) {
+        setTrash(0);
+        map.update(false);
+        passMap();
+        for (auto &piecePos : pieceChanges)
+            piecePos.x -= addCount;
+    }
+    if (attack > 0)
+        emit sendAttack(attack);
+    mutex.unlock();
     if (!tn.check(map)) //check is dead
         deaded = true;
-
     passPiece(true);
     toFresh(pieceType, pieceChanges, clear, std::tuple<bool, bool, int> {isTSpin, gamedata.b2b > 1, gamedata.combo});
 }
 
-int Tetris::sendTrash(std::tuple<std::tuple<bool, bool>, int> &status)
+int Tetris::sendTrash(const std::tuple<TSpinType, int> &status)
 {
     int attackTo = 0, b2b = !!gamedata.b2b;
-    auto [isTSpin, clear] = status;
-    auto [spin, mini] = isTSpin;
+    auto [spin, clear] = status;
     int clears[] = {0, 0, 1, 2, 4};
-    if (spin) {
+    if (spin != TSpinType::None) {
         switch (clear) {
-        case 1: attackTo += ((mini ? 1 : 2) + b2b); break;
+        case 1: attackTo += ((spin == TSpinType::TSpinMini ? 1 : 2) + b2b); break;
         case 2: attackTo += (4 + b2b); break;
         case 3: attackTo += (b2b ? 6 : 8); break;
         default: break;
         }
     } else {
-        attackTo += (clears[clear] + b2b);
+        attackTo += (clears[clear] + (clear == 4 ? b2b : 0));
     }
+    if (map.count == 0)
+        attackTo += 6;
     attackTo += comboTable[std::min(gamedata.combo, tableMax)];
     return attackTo;
 }
@@ -560,20 +611,6 @@ void Tetris::passMap()
     emit mapFresh(mapMsg);
 }
 
-void Tetris::setKeyboard(QVariantMap a)
-{
-    keyconfig.leftKey = a["left_move"].value<int>();
-    keyconfig.rightKey = a["right_move"].value<int>();
-    keyconfig.harddropKey = a["hard_drop"].value<int>();
-    keyconfig.softDropKey = a["soft_drop"].value<int>();
-    keyconfig.ccwKey = a["rotate_normal"].value<int>();
-    keyconfig.cwKey = a["rotate_reverse"].value<int>();
-    keyconfig.dasDelay = a["das_delay"].value<int>();
-    keyconfig.arrDelay = a["das_repeat"].value<int>();
-    keyconfig.softdropDelay = a["softDropSpeed"].value<int>();
-    keyconfig.replay = a["replay"].value<int>();
-}
-
 void Tetris::replay(const QString &str)
 {
     task.clearInterval(handle);
@@ -617,6 +654,9 @@ void Tetris::playPath()
 {
     auto path  = watcher.result();
     auto interval = 0;
+    if (path.empty()) {
+        path.append(Oper::HardDrop);
+    }
     for (auto i = 0; i < path.size(); i++) {
         recordPath.add(path[i],  interval); //interval
         if ((i + 1 < path.size()) &&  path[i + 1] == Oper::SoftDrop) {
@@ -644,7 +684,7 @@ QVector<Oper> Tetris::caculateBot(TetrisNode &start, int limitTime)
     auto a = start;
     TreeContext ctx;
     auto dp = randSys.displayBag.mid(0, 6);
-    ctx.createRoot(a, map, dp, holdSys.type, !!gamedata.b2b, gamedata.combo);
+    ctx.createRoot(a, map, dp, holdSys.type, !!gamedata.b2b, gamedata.combo, gamedata.trashLinesCount);
     using std::chrono::high_resolution_clock;
     using std::chrono::milliseconds;
     auto now = high_resolution_clock::now(), end = now + milliseconds(limitTime);
@@ -665,7 +705,7 @@ QVector<Oper> Tetris::caculateBot(TetrisNode &start, int limitTime)
 
 void Tetris::botCall()
 {
-    auto limitTime = 100;
+    auto limitTime = keyconfig["botTimeCost"].value<int>();
     recordPath.clear();
     QFuture<QVector<Oper>> future = QtConcurrent::run(this, &Tetris::caculateBot, tn, limitTime);
     watcher.setFuture(future);
@@ -688,53 +728,25 @@ void Tetris::ExampleMap()
         }
     };
 
-
-    /*  map.data[map.height - 3] = 0b1111111011;
-      map.data[map.height - 2] = 0b1111110011;
-      map.data[map.height - 1] = 0b1111111011;*/
-    /*map.data[map.height - 3] = 0b1101111111;
-    map.data[map.height - 2] = 0b1100111111;
-    map.data[map.height - 1] = 0b1101111111;*/
-    //tsd
-    // map.data[map.height - 7] = 0b0000000000;
-    // map.data[map.height - 6] = 0b0100000000;*/
-    /* map.data[map.height - 5] = 0b0100000000;
-     map.data[map.height - 4] = 0b0000000000;
-     map.data[map.height - 3] = 0b1000000000;
-     map.data[map.height - 2] = 0b1001111111;
-     map.data[map.height - 1] = 0b1011111111;*/
-
-
-    /*map.data[map.height - 8] = 0b1100000010;
-    map.data[map.height - 7] = 0b1100111111;
-    map.data[map.height - 6] = 0b1011101100;
-    map.data[map.height - 5] = 0b1111101111;
-    map.data[map.height - 4] = 0b0011000110;
-    map.data[map.height - 3] = 0b1101111001;
-    map.data[map.height - 2] = 0b1111110000;
-    map.data[map.height - 1] = 0b0000000000;*/
-    map.data[map.height - 5] = 0b1001111111;
-    map.data[map.height - 4] = 0b1000111111;
-    map.data[map.height - 3] = 0b1101111111;
-    map.data[map.height - 2] = 0b1000111111;
-    map.data[map.height - 1] = 0b1101111111;
+    map.data[map.height - 5] = 0b1000000000;
+    map.data[map.height - 4] = 0b1000000000;
+    map.data[map.height - 3] = 0b1011111111;
+    map.data[map.height - 2] = 0b1001111111;
+    map.data[map.height - 1] = 0b1011111111;
     reverseMap();
     //qDebug() << 0b1111110101;
 
     /*    for (auto i = 1; i < 19; i++) {
-            auto row = 0b1010101010;
-            //row &= ~(1 << (i % 10));
-            map.data[map.height - i] = (i % 2 ? row : (row >> 1));
-        }*/
+           auto row = 0b1010101010;
+           //row &= ~(1 << (i % 10));
+           map.data[map.height - i] = (i % 2 ? row : (row >> 1));
+       }*/
 
 
-    for (auto i = 1; i < 19; i++) {
+    for (auto i = 1; i < 19 - 1; i++) {
         auto row = 0b0111101110;
         map.data[map.height - i] = row;//(i % 2 ? row : (row >> 1));
     }
-    //map.data[3]=0b1101;
-    //map.data[4]=0b0111111111;
-
 
     for (auto i = 0; i < map.height; i++)
         for (auto j = 0; j < map.width; j++) {

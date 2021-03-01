@@ -32,43 +32,31 @@ public slots:
     void killTimer_(int);
     int startTimer_(int);
     void timerEvent(QTimerEvent *);
-    void pressHandle(int );
+    void pressHandle(int);
     void releaseHandle(int);
 public:
     Task() = default;
     void back(QThread *);
     QHash<int, std::function<int()>> m_intervalHash;
     QHash<int, std::function<void()>> m_timeoutHash;
-    KeyState leftKey{nullptr};
-    KeyState rightKey{nullptr};
-    KeyState softDropKey{nullptr, nullptr, true};
+    KeyState leftKey{this, nullptr};
+    KeyState rightKey{this, nullptr};
+    KeyState softDropKey{this, nullptr, nullptr, true};
 };
 
 class Tetris: public QQuickItem
 {
     Q_OBJECT
+    Q_PROPERTY(int trash READ trash WRITE setTrash NOTIFY trashChanged)
 public:
-    struct keyConfig {
-        int leftKey = Qt::Key_Left;
-        int rightKey = Qt::Key_Right;
-        int softDropKey = Qt::Key_Down;
-        int harddropKey = Qt::Key_Space;
-        int cwKey = Qt::Key_Z;
-        int ccwKey = Qt::Key_X;
-        int holdKey = Qt::Key_C;
-        int restartKey = Qt::Key_R;
-        int dasDelay = 65;
-        int arrDelay = 17;
-        int softdropDelay = 8;
-        int replay = Qt::Key_Q;
-    };
-
     struct gameData {
         int clear = 0;
         int b2b = 0;
         int combo = 0;
         int pieces = 0;
         bool comboState = false;
+        QVector<int> trashLines;
+        int trashLinesCount = 0;
     };
 
     Tetris();
@@ -98,21 +86,42 @@ public:
     QVector<Oper> caculateBot(TetrisNode &, int); //bot计算
     void botCall();//bot调用执行操作
     void ExampleMap();//使用地图;
-    int sendTrash(std::tuple<std::tuple<bool, bool>, int> &);//计算攻击
+    int sendTrash(const std::tuple<TSpinType, int> &);//计算攻击
     void digModAdd(int, bool);//添加挖掘垃圾行
 
     Q_INVOKABLE void passPiece(bool newPiece = false);
     Q_INVOKABLE void passMap();
     Q_INVOKABLE void passHold(bool ifForce = false);
     Q_INVOKABLE void passNext(bool ifForce = false);
-    Q_INVOKABLE void setKeyboard(QVariantMap a);
+    Q_INVOKABLE void getTrash(int trash)
+    {
+        if (trash > 0) {
+            gamedata.trashLines.push_back(trash);
+            setTrash(gamedata.trashLinesCount + trash);
+            //gamedata.trashLinesCount += trash;
+        }
+    }
+
+    void setTrash(int a)
+    {
+        if (a != gamedata.trashLinesCount) {
+            gamedata.trashLinesCount = a;
+            emit trashChanged();
+        }
+    }
+
+    int trash() const
+    {
+        return gamedata.trashLinesCount;
+    }
 
     int handle, botHandle = -1;
     QFutureWatcher<QVector<Oper>> watcher;
 
-    static keyConfig keyconfig;
-    static Task task;
+    static QQmlPropertyMap keyconfig;
+    Task task;
     static MyThread td;
+    static bool initConfig;
 
 public slots:
     void playPath();
@@ -126,12 +135,9 @@ private:
     TetrisMapEx map{10, 20};
     QMutex mutex;
     Recorder record{randSys.seed}, recordPath{randSys.seed};
-    KeyState leftKey{std::bind(&Tetris::left, this)};
-    KeyState rightKey{std::bind(&Tetris::right, this)};
-    KeyState softDropKey{std::bind(&Tetris::softdrop, this), nullptr, true};
     std::chrono::time_point<std::chrono::high_resolution_clock> startTime;
     bool isReplay = false;
-    QVector<int> comboTable{0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 4, 5, -1};
+    QVector<int> comboTable{ 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 4, 5, -1};
     int tableMax = 14, underAttack = 0;
     int digRows = 10, digRowsEnd = 100;
     bool deaded = false, digMod = false;
@@ -146,6 +152,8 @@ signals:
     void restartGame();
     void the(int);
     void the1(int);
+    void sendAttack(int);
+    void trashChanged();
 };
 
 #endif // TETRIS_H

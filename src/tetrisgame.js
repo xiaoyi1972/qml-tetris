@@ -1,4 +1,4 @@
-﻿let blockSize = 19, blockSize_ = 18.5, maxColumn = 10, maxRow = 20, RowOver = 2
+﻿let blockSize = 20, blockSize_ = 18.5, maxColumn = 10, maxRow = 20, RowOver = 2
 let maxIndex = maxColumn * (maxRow + RowOver)
 let component = null, activeComponent = null, minoComponent = null
 let Piece = { None: -1, O: 0, I: 1, T: 2, L: 3, J: 4, S: 5, Z: 6 }
@@ -94,6 +94,7 @@ class View {
         }
         if (_data.dead) {
             this.feildLayer.playDead()
+            buxing.restartGames()
             return
         }
         if (clear.clearArr.length !== 0) {
@@ -251,10 +252,10 @@ function createBlock(column, row, board = null, parent, instant = false) {
         if (instant)
             dynamicObject.banFlash(false)
         dynamicObject.banAimate(false)
-        dynamicObject.x = column * (blockSize) + 0.25
-        dynamicObject.y = row * (blockSize) + 0.25
-        dynamicObject.width = blockSize_
-        dynamicObject.height = blockSize_
+        dynamicObject.x = column * (blockSize)// + 0.25
+        dynamicObject.y = row * (blockSize) //+ 0.25
+        dynamicObject.width = blockSize//_
+        dynamicObject.height = blockSize//_
         dynamicObject.spawned = true
         dynamicObject.banAimate(true)
         if (instant)
@@ -277,14 +278,13 @@ function createActiveBlock(column, row, board = null, parent) {
         if (dynamicObject === null) {
             return false;
         }
-        dynamicObject.x = column * (blockSize) + 0.25
-        dynamicObject.y = row * (blockSize) + 0.25
-        dynamicObject.width = blockSize_
-        dynamicObject.height = blockSize_
+        dynamicObject.x = column * (blockSize) //+ 0.25
+        dynamicObject.y = row * (blockSize) //+ 0.25
+        dynamicObject.width = blockSize//_
+        dynamicObject.height = blockSize//_
         if (board !== null)
             board.push(dynamicObject)
         return dynamicObject
-        //board[index(column, row)] = dynamicObject;
     }
 }
 
