@@ -5,12 +5,11 @@ import QtQuick.Layouts 1.15
 
 Item {
     id: root
-    width: root.tetrisGame.blockSize * root.tetrisGame.maxColumn
-    height: root.tetrisGame.blockSize * (root.tetrisGame.maxRow + root.tetrisGame.RowOver)
-    property var heightInline: root.tetrisGame.blockSize * root.tetrisGame.maxRow
+    width: tetrisConfig.blockSize * tetrisConfig.maxColumn
+    height: tetrisConfig.blockSize * (tetrisConfig.maxRow + tetrisConfig.rowOver)
+    property var heightInline: tetrisConfig.blockSize * tetrisConfig.maxRow
     property var tetrisGame: null
     property var tetris: null
-    property alias feildLayer: feildLayer
     property alias background: background
     property alias active: fk
     property alias shadow: shadow
@@ -21,10 +20,10 @@ Item {
 
     Shape {
         id: displayBorder
-        width: root.tetrisGame.blockSize * root.tetrisGame.maxColumn
-        height: root.tetrisGame.blockSize * root.tetrisGame.maxRow
+        width: tetrisConfig.blockSize * tetrisConfig.maxColumn
+        height: tetrisConfig.blockSize * tetrisConfig.maxRow
         anchors.top: parent.top
-        anchors.topMargin: root.tetrisGame.blockSize * root.tetrisGame.RowOver
+        anchors.topMargin: tetrisConfig.blockSize * tetrisConfig.rowOver
         ShapePath {
             strokeWidth: 1
             strokeColor: "black"
@@ -32,10 +31,10 @@ Item {
             startY: 0
             PathLine {
                 x: 0
-                y: root.tetrisGame.blockSize * (root.tetrisGame.maxRow)
+                y: displayBorder.height
             }
             PathLine {
-                relativeX: root.tetrisGame.blockSize * root.tetrisGame.maxColumn
+                relativeX: displayBorder.width
                 relativeY: 0
             }
             PathLine {
@@ -44,7 +43,7 @@ Item {
             }
             PathMove {
                 relativeX: 0
-                relativeY: root.tetrisGame.blockSize * (root.tetrisGame.maxRow)
+                relativeY: displayBorder.height
             }
             PathLine {
                 relativeX: 10
@@ -57,30 +56,36 @@ Item {
         }
     }
 
-    ShaderEffect {
-        id: feildLayer
+    Item {
         anchors.fill: parent
+        layer.enabled: true
         visible: true
-        property variant src: background
-        property double range: 1
-        property double unVisible: (root.tetrisGame.RowOver)
-                                   / (root.tetrisGame.maxRow + root.tetrisGame.RowOver)
-        NumberAnimation {
-            id: animationDead
-            target: feildLayer
-            property: "range"
-            from: 1
-            to: 0
-            //  loops: Animation.Infinite
-            duration: 1000
-        }
-        function playDead() {
-            animationDead.start()
-        }
-        function stop() {
-            animationDead.stop()
-        }
-        vertexShader: "
+
+        Item {
+            id: background
+            anchors.fill: parent
+            property double range: 1
+            NumberAnimation {
+                id: animationDead
+                target: background
+                property: "range"
+                from: 1
+                to: 0
+                duration: 1000
+            }
+            function playDead() {
+                animationDead.start()
+            }
+            function stop() {
+                animationDead.stop()
+            }
+           /* layer.enabled: true
+            layer.effect: ShaderEffect {
+                property variant src: background
+                property double range: background.range
+                property double unVisible: (root.tetrisGame.RowOver)
+                                           / (root.tetrisGame.maxRow + root.tetrisGame.RowOver)
+                vertexShader: "
 uniform highp mat4 qt_Matrix;
 attribute highp vec4 qt_Vertex;
 attribute highp vec2 qt_MultiTexCoord0;
@@ -89,7 +94,7 @@ void main() {
 coord = qt_MultiTexCoord0;
 gl_Position = qt_Matrix * qt_Vertex;
 }"
-        fragmentShader: "
+                fragmentShader: "
 varying highp vec2 coord;
 uniform sampler2D src;
 uniform float range;
@@ -102,91 +107,91 @@ tex.rgb=mix(vec3(0.6,0.6,0.6),tex.rgb,test);
 tex.a=tex.a*step(unVisible,coord.y);
 gl_FragColor =vec4(tex.rgb,tex.a);
 }"
-    }
+            }*/
+        }
 
-    Item {
-        id: background
-        anchors.fill: parent
-        layer.enabled: true
-        visible: false
-    }
-
-    Item {
-        id: fk
-        property int minoType: -1
-        property var board: []
-        property int rs: 0
-        property int xyDuration: 50
-        property int rDuration: 60
-        property bool banAni: true
-        x: 0
-        y: 0
-        transformOrigin: Item.Center
-        rotation: 0
-        Behavior on x {
-            id: xb
-            enabled: fk.banAni && setscene.config.operTransition
-            SmoothedAnimation {
-                duration: Math.ceil(
-                              fk.xyDuration / Math.ceil(
-                                  Math.abs(xb.targetValue - fk.x) / 19 + .1))
+        Mino {
+            id: fk
+            tight: false
+            property int rs: 0
+            property int xyDuration: 50
+            property int rDuration: 60
+            property bool banAni: true
+            rotation: 0
+            transformOrigin: Item.Center
+      //      layer.enabled: false
+            Behavior on x {
+                id: xb
+                enabled: fk.banAni && tetrisConfig.operTransition
+                SmoothedAnimation {
+                    duration: Math.ceil(
+                                  fk.xyDuration / Math.ceil(
+                                      Math.abs(
+                                          xb.targetValue - fk.x) / tetrisConfig.blockSize + .1))
+                    velocity: -1
+                }
             }
-        }
-        Behavior on y {
-            id: yb
-            enabled: fk.banAni && setscene.config.operTransition
-            SmoothedAnimation {
-                duration: Math.ceil(
-                              fk.xyDuration / Math.ceil(
-                                  Math.abs(yb.targetValue - fk.y) / 19 + .1))
+            Behavior on y {
+                id: yb
+                enabled: fk.banAni && tetrisConfig.operTransition
+                SmoothedAnimation {
+                    duration: Math.ceil(
+                                  fk.xyDuration / Math.ceil(
+                                      Math.abs(
+                                          yb.targetValue - fk.y) / tetrisConfig.blockSize + .1))
+                    velocity: -1
+                }
             }
-        }
-        Behavior on rotation {
-            id: rsb
-            enabled: fk.banAni && setscene.config.operTransition
-            RotationAnimation {
-                duration: fk.rDuration
-                direction: RotationAnimator.Shortest
+            Behavior on rotation {
+                id: rsb
+                enabled: fk.banAni && tetrisConfig.operTransition
+                RotationAnimation {
+                    duration: fk.rDuration
+                    direction: RotationAnimator.Shortest
+                }
             }
-        }
-        function toggleBehavior(is) {
-            fk.banAni = is
-        }
-    }
-
-    Item {
-        id: shadow
-        property int minoType: -1
-        property var board: []
-        property int xyDuration:  50
-        property bool banAni: true
-        x: 0
-        y: 0
-        transformOrigin: Item.Center
-        rotation: 0
-        Behavior on x {
-            id: xb1
-            enabled: shadow.banAni && setscene.config.operTransition
-            SmoothedAnimation {
-                duration: Math.ceil(
-                              shadow.xyDuration / Math.ceil(
-                                  Math.abs(
-                                      xb1.targetValue - shadow.x) / 19 + .1))
-            }
-        }
-        Behavior on y {
-            id: yb1
-            enabled: shadow.banAni && setscene.config.operTransition
-            SmoothedAnimation {
-                duration: Math.ceil(
-                              shadow.xyDuration / Math.ceil(
-                                  Math.abs(
-                                      yb1.targetValue - shadow.y) / 19 + .1))
+            function toggleBehavior(is) {
+                fk.banAni = is
             }
         }
 
-        function toggleBehavior(is) {
-            shadow.banAni = is
+        Mino {
+            id: shadow
+            visible: true
+            property int rs: 0
+            property int xyDuration: 50
+            property bool banAni: true
+            property double yMoving
+            tight: false
+            transformOrigin: Item.Center
+            rotation: 0
+            shadow: true
+            y: Math.floor(shadow.yMoving / tetrisConfig.blockSize) * tetrisConfig.blockSize
+            Behavior on x {
+                id: xb1
+                enabled: shadow.banAni && tetrisConfig.operTransition
+                SmoothedAnimation {
+                    duration: Math.ceil(
+                                  shadow.xyDuration / Math.ceil(
+                                      Math.abs(
+                                          xb1.targetValue - shadow.x) / tetrisConfig.blockSize + .1))
+                    velocity: -1
+                }
+            }
+            Behavior on yMoving {
+                id: yb1
+                enabled: shadow.banAni && tetrisConfig.operTransition
+                SmoothedAnimation {
+                    duration: Math.ceil(
+                                  shadow.xyDuration / Math.ceil(
+                                      Math.abs(
+                                          yb1.targetValue - shadow.yMoving) / tetrisConfig.blockSize + .1))
+                    velocity: -1
+                }
+            }
+            function toggleBehavior(is) {
+                shadow.banAni = is
+            }
         }
     }
 
@@ -200,7 +205,7 @@ gl_FragColor =vec4(tex.rgb,tex.a);
             id: factTrash
             height: (Math.min(
                          tetris.trash,
-                         root.tetrisGame.maxRow) / root.tetrisGame.maxRow) * parent.height
+                         tetrisConfig.maxRow) / tetrisConfig.maxRow) * parent.height
             width: parent.width
             color: "orange"
             anchors.bottom: parent.bottom
@@ -219,8 +224,8 @@ gl_FragColor =vec4(tex.rgb,tex.a);
     }
 
     Column {
-        anchors.top: trashStatus.top //displayBorder.top
-        anchors.left: trashStatus.right ///root.right
+        anchors.top: trashStatus.top
+        anchors.left: trashStatus.right
         anchors.margins: 5
         anchors.topMargin: 0
         spacing: 10
@@ -229,10 +234,24 @@ gl_FragColor =vec4(tex.rgb,tex.a);
             font.pointSize: 16
             text: "预览"
         }
-        Column {
+
+        ListView {
             id: nextsC
+            interactive: false
+            width: parent.width
+            height: contentHeight
+            currentIndex: 0
             spacing: 20
-            move: Transition {
+            reuseItems: true
+            model: ListModel {}
+            delegate: Mino {
+                ListView.onPooled: create(-1)
+                ListView.onReused: create(minoType)
+                Component.onCompleted: {
+                    create(minoType)
+                }
+            }
+            displaced: Transition {
                 NumberAnimation {
                     properties: "x,y"
                     duration: 100
@@ -246,9 +265,9 @@ gl_FragColor =vec4(tex.rgb,tex.a);
             add: Transition {
                 NumberAnimation {
                     properties: "opacity"
-                    duration: 150
                     from: 0
                     to: 1
+                    duration: 150
                 }
             }
         }
@@ -262,8 +281,9 @@ gl_FragColor =vec4(tex.rgb,tex.a);
         anchors.right: root.left
         font.pointSize: 16
         text: "暂存"
-        horizontalAlignment: Text.AlignRightA
+        horizontalAlignment: Text.AlignRight
     }
+
     Mino {
         anchors.topMargin: 10
         anchors.top: holdText.bottom

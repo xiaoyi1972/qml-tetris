@@ -34,9 +34,9 @@ public slots:
     void timerEvent(QTimerEvent *);
     void pressHandle(int);
     void releaseHandle(int);
+    void back(QThread *);
 public:
     Task() = default;
-    void back(QThread *);
     QHash<int, std::function<int()>> m_intervalHash;
     QHash<int, std::function<void()>> m_timeoutHash;
     KeyState leftKey{this, nullptr};
@@ -80,10 +80,10 @@ public:
     void opers(Oper a);//操作
     Q_INVOKABLE void replay(const QString &str = ""); //重播
     void replayFunc(); //录像重播
-    void replayBotOperFunc(); //bot操作播放
+
     int timeRecord();//录像操作时间点
     void toFresh(Piece &, QVector<Pos> &, QVector<int> &, const std::tuple<bool, bool, int> &);//刷新状态信息
-    QVector<Oper> caculateBot(TetrisNode &, int); //bot计算
+    QVector<Oper> caculateBot(const TetrisNode &, const int) const; //bot计算
     void botCall();//bot调用执行操作
     void ExampleMap();//使用地图;
     int sendTrash(const std::tuple<TSpinType, int> &);//计算攻击
@@ -98,7 +98,6 @@ public:
         if (trash > 0) {
             gamedata.trashLines.push_back(trash);
             setTrash(gamedata.trashLinesCount + trash);
-            //gamedata.trashLinesCount += trash;
         }
     }
 
@@ -115,7 +114,7 @@ public:
         return gamedata.trashLinesCount;
     }
 
-    int handle, botHandle = -1;
+    int handle = -1, botOperHandle = -1, botHandle = -1;
     QFutureWatcher<QVector<Oper>> watcher;
 
     static QQmlPropertyMap keyconfig;
@@ -125,8 +124,10 @@ public:
 
 public slots:
     void playPath();
+    void replayBotOperFunc(); //bot操作播放
 
 private:
+    QQmlPropertyMap mtest;
     bool tg = false;
     Random randSys;
     Hold holdSys{&randSys};
@@ -154,6 +155,7 @@ signals:
     void the1(int);
     void sendAttack(int);
     void trashChanged();
+    void testChanged();
 };
 
 #endif // TETRIS_H

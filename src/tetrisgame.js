@@ -1,24 +1,11 @@
-﻿let blockSize = 20, blockSize_ = 18.5, maxColumn = 10, maxRow = 20, RowOver = 2
-let maxIndex = maxColumn * (maxRow + RowOver)
-let component = null, activeComponent = null, minoComponent = null
-let Piece = { None: -1, O: 0, I: 1, T: 2, L: 3, J: 4, S: 5, Z: 6 }
-let minos = [
-    [[0, 0, 0, 0], [0, 1, 1, 0], [0, 1, 1, 0], [0, 0, 0, 0]],
-    [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
-    [[0, 1, 0], [1, 1, 1], [0, 0, 0]],
-    [[0, 0, 1], [1, 1, 1], [0, 0, 0]],
-    [[1, 0, 0], [1, 1, 1], [0, 0, 0]],
-    [[0, 1, 1], [1, 1, 0], [0, 0, 0]],
-    [[1, 1, 0], [0, 1, 1], [0, 0, 0]],
-]
+﻿let component = null;
 
 function index(column, row) {
-    return column + (row * maxColumn);
+    return column + (row * tetrisConfig.maxColumn);
 }
 
 class View {
     constructor(_component,_tetrisComponent) {
-        this.feildLayer = _component.feildLayer
         this.background = _component.background
         this.fk = _component.active
         this.shadow = _component.shadow
@@ -26,8 +13,8 @@ class View {
         this.hold = _component.hold
         this.effectClear=_component.effectClear
         this.clearText=_component.clearText;
-        this.board = new Array(maxIndex).fill(null)
-        this.nexts = []
+        this.maxIndex = tetrisConfig.maxColumn * (tetrisConfig.maxRow + tetrisConfig.rowOver)
+        this.board = new Array(this.maxIndex).fill(null)
         this.tetrisComponent=_tetrisComponent
         this.fresh = this.fresh.bind(this);
         this.hardDropFresh = this.hardDropFresh.bind(this);
@@ -48,18 +35,17 @@ class View {
     }
 
     startNewGame() {
-        this.feildLayer.stop()
-        this.feildLayer.range = 1
+        this.background.stop()
+        this.background.range = 1
         this.shadow.opacity = 1
         this.effectClear.text=""
         this.clearText.text=""
-        for (let i = 0; i < maxIndex; i++) {
+        for (let i = 0; i < this.maxIndex; i++) {
             if (this.board[i] !== null) {
                 this.board[i].destroy(0)
                 this.board[i] = null
             }
         }
-     //   maxIndex = (maxRow + RowOver) * maxColumn;
     }
 
     mapFresh(_data) {
@@ -71,41 +57,40 @@ class View {
             }
             if (map[i] !== -1) {
                 if (this.board[i] === null) {
-                    let x = parseInt(i / maxColumn)
-                    let y = i % maxColumn
+                    let x = parseInt(i / tetrisConfig.maxColumn)
+                    let y = i % tetrisConfig.maxColumn
                     createBlock(y, x, this.board, this.background, true)
-                    this.board[i].color = getTypeColor(map[i])
+                    this.board[i].color = tetrisConfig.getTypeColor(map[i])
                 }
             }
         }
     }
 
     hardDropFresh(_data) {
-        let changes = _data.changes
-        let clear = _data.clear
-        let specialClear=_data.specialClear
-        this.effectClear.text=specialClear
-       this.clearText.text=_data.clearStatus
+       let changes = _data.changes
+       let clear = _data.clear
+       let specialClear = _data.specialClear
+       this.effectClear.text = specialClear
+       this.clearText.text = _data.clearStatus
         for (let i  of changes) {
             if (this.board[index(i.x, i.y)] == null)
-                createBlock(i.x, i.y, this.board, this.background)
-               this.board[index(i.x, i.y)].color = getTypeColor(i.type)
+               createBlock(i.x, i.y, this.board, this.background)
+               this.board[index(i.x, i.y)].color = tetrisConfig.getTypeColor(i.type)
                this.board[index(i.x, i.y)].playColor()
         }
         if (_data.dead) {
-            this.feildLayer.playDead()
+            this.background.playDead()
             buxing.restartGames()
             return
         }
         if (clear.clearArr.length !== 0) {
             for (let i of clear.clearArr) {
-                for (let column = 0; column < maxColumn; column++) {
-                    if (this.board[index(column, i)] != null)
+                for (let column = 0; column < tetrisConfig.maxColumn; column++) {
+                   if (this.board[index(column, i)] !== null)
                         this.board[index(column, i)].dying = true
                     this.board[index(column, i)] = null
                 }
             }
-
             function getDropI(index) {
                 let num = 0;
                 for (let i of clear.clearArr) {
@@ -114,13 +99,12 @@ class View {
                 }
                 return num;
             }
-
-            for (let column = 0; column < maxColumn; column++) {
-                for (let row = maxRow + RowOver - 1; row >= 0; row--) {
+            for (let column = 0; column < tetrisConfig.maxColumn; column++) {
+                for (let row = tetrisConfig.maxRow + tetrisConfig.rowOver - 1; row >= 0; row--) {
                     let obj = this.board[index(column, row)]
                     let droprow = getDropI(row)
                     if (obj !== null && droprow > 0) {
-                        obj.y = (droprow + row) * blockSize
+                        obj.y = (droprow + row) * tetrisConfig.blockSize
                         this.board[index(column, row + droprow)] = obj
                         this.board[index(column, row)] = null
                     }
@@ -130,115 +114,46 @@ class View {
     }
 
     fresh(_data) {
-        let banAnimation = false
         if (_data.isNewSpawn) {
-            banAnimation = true
             this.fk.toggleBehavior(false)
             this.shadow.toggleBehavior(false)
-            createActive(_data.active.type, this.fk, false, _data.dead)
-            createActive(_data.active.type, this.shadow, true, _data.dead)
+            this.fk.create(_data.active.type)
+            this.shadow.create(_data.active.type)
         }
-        this.fk.width = minos[_data.active.type].length * blockSize
-        this.fk.height = minos[_data.active.type].length * blockSize
         this.fk.rotation = _data.active.rs * 90
         this.fk.rs = _data.active.rs
-        this.fk.x = blockSize * _data.active.x
-        this.fk.y = blockSize * _data.active.y
+        this.fk.x = tetrisConfig.blockSize * _data.active.x
+        this.fk.y = tetrisConfig.blockSize * _data.active.y
         this.fk.toggleBehavior(true)
         if (_data.active.drop === 0)
             this.shadow.opacity = 0
         else {
             this.shadow.opacity = 1
-            this.shadow.width = minos[_data.active.type].length * blockSize
-            this.shadow.height = minos[_data.active.type].length * blockSize
             this.shadow.rotation = _data.active.rs * 90
-            this.shadow.x = blockSize * _data.active.x
-            this.shadow.y = blockSize * (_data.active.y + _data.active.drop)
+            this.shadow.x = tetrisConfig.blockSize * _data.active.x
+            this.shadow.yMoving = tetrisConfig.blockSize * (_data.active.y + _data.active.drop)
             this.shadow.toggleBehavior(true)
         }
     }
 
     freshNext(_data) {
-        if (_data.force) {
-            for (let i = 0; i < this.nextsC.children.length; i++) {
-                this.nextsC.children[i].visible = false
-                this.nextsC.children[i].destroy(0)
-            }
-            this.nexts.length = 0
-        }
-        if (this.nexts.length === 0) {
-            for (let i of _data.next) {
-                nextBlock(i, this.nexts, this.nextsC)
-            }
-        }
+        let model = this.nextsC.model
+        if (_data.force)
+            for (let i = 0; i < this.nextsC.children.length; i++)
+                model.clear();
+        if (model.count === 0)
+            for (let i of _data.next)
+                model.append({"minoType":i})
         else {
-            this.nexts[0].destroy()
-            this.nexts[0].visible = false
-            this.nexts.splice(0, 1)
-            nextBlock(_data.nextNew, this.nexts, this.nextsC)
+            model.remove(0,1)
+            model.append({"minoType":_data.nextNew})
         }
     }
 
     freshHold(_data) {
-        for (let i = 0; i < this.hold.children.length; i++) {
-            this.hold.children[i].visible = false
-            this.hold.children[i].destroy(0)
-        }
-        if (_data.type !== -1)
-            this.hold.create(_data.type)
+        this.hold.create(_data.type)
     }
 }
-
-function getTypeColor(piece) {
-    let str;
-    switch (piece) {
-        case -2: str = Qt.rgba(115 / 255, 115 / 255, 115 / 255); break;
-        case Piece.O: str = Qt.rgba(245 / 255, 220 / 255, 0 / 255); break;
-        case Piece.I: str = Qt.rgba(57 / 255, 195 / 255, 199 / 255); break;
-        case Piece.T: str = Qt.rgba(138 / 255, 43 / 255, 227 / 255); break;
-        case Piece.L: str = Qt.rgba(255 / 255, 166 / 255, 0 / 255); break;
-        case Piece.J: str = Qt.rgba(0 / 255, 0 / 255, 255 / 255); break;
-        case Piece.S: str = Qt.rgba(51 / 255, 204 / 255, 51 / 255); break;
-        case Piece.Z: str = Qt.rgba(255 / 255, 0 / 255, 0 / 255); break;
-    }
-    return str;
-}
-
-
-function createActive(type, parent, isShadow = false, deaded = false) {
-    parent.minoType = type
-    parent.visible = false
-    for (let i of parent.board) {
-        if (i !== null) {
-            i.visible = false
-            i.destroy(0)
-            i = null
-        }
-    }
-    if (deaded) {
-        parent.board.length = 0
-        parent.visible = true
-        return;
-    }
-    parent.board.length = 0
-    let len = minos[type].length;
-    for (let row = 0; row < len; row++) {
-        for (let column = 0; column < len; column++) {
-            if (minos[type][row][column]) {
-                let block = createActiveBlock(column, row, parent.board, parent);
-                if (!isShadow)
-                    block.color = getTypeColor(type);
-                else {
-                    block.color = "transparent";
-                    block.border.width = 1
-                    block.border.color = getTypeColor(type);
-                }
-            }
-        }
-    }
-    parent.visible = true
-}
-
 
 function createBlock(column, row, board = null, parent, instant = false) {
     if (component === null) {
@@ -249,57 +164,17 @@ function createBlock(column, row, board = null, parent, instant = false) {
         if (dynamicObject === null) {
             return false;
         }
-        if (instant)
-            dynamicObject.banFlash(false)
         dynamicObject.banAimate(false)
-        dynamicObject.x = column * (blockSize)// + 0.25
-        dynamicObject.y = row * (blockSize) //+ 0.25
-        dynamicObject.width = blockSize//_
-        dynamicObject.height = blockSize//_
+        dynamicObject.x = column * (tetrisConfig.blockSize) //+ 0.25
+        dynamicObject.y = row * (tetrisConfig.blockSize) //+ 0.25
+        dynamicObject.width = tetrisConfig.blockSize //- 0.5
+        dynamicObject.height = tetrisConfig.blockSize //-0.5
         dynamicObject.spawned = true
         dynamicObject.banAimate(true)
-        if (instant)
-            dynamicObject.banFlash(true)
-        if (board !== null)
+        if (board  !== null)
             board[index(column, row)] = dynamicObject
-
     } else {
         return false;
     }
     return true;
-}
-
-function createActiveBlock(column, row, board = null, parent) {
-    if (activeComponent === null) {
-        activeComponent = Qt.createComponent("block.qml")
-    }
-    if (activeComponent.status === Component.Ready) {
-        let dynamicObject = activeComponent.createObject(parent);
-        if (dynamicObject === null) {
-            return false;
-        }
-        dynamicObject.x = column * (blockSize) //+ 0.25
-        dynamicObject.y = row * (blockSize) //+ 0.25
-        dynamicObject.width = blockSize//_
-        dynamicObject.height = blockSize//_
-        if (board !== null)
-            board.push(dynamicObject)
-        return dynamicObject
-    }
-}
-
-function nextBlock(type, _nextsList = null, parent) {
-    if (minoComponent === null)
-        minoComponent = Qt.createComponent("Mino.qml")
-    if (minoComponent.status === Component.Ready) {
-        let dynamicObject = minoComponent.createObject(parent)
-        if (dynamicObject === null) {
-            return false
-        }
-        _nextsList.push(dynamicObject)
-        dynamicObject.create(type)
-    } else {
-        return false
-    }
-    return true
 }

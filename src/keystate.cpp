@@ -1,15 +1,14 @@
 ﻿#include "keystate.h"
 #include"tetris.cpp"
 
-KeyState::KeyState(Task*_task,
-        const std::function<void()> &_func, std::function<void()>_endFunc,
-        bool _isDown, bool _noDas)
+KeyState::KeyState(Task *_task,
+                   const std::function<void()> &_func, std::function<void()>_endFunc,
+                   bool _isDown)
 {
     func = _func;
     endFunc = _endFunc;
     isDown = _isDown;
-    noDas = _noDas;
-    task=_task;
+    task = _task;
 }
 
 bool KeyState::keyDown()
@@ -17,9 +16,6 @@ bool KeyState::keyDown()
     if (!press) {
         press = true;
         func();
-        if (noDas) {
-            return true;
-        }
         if (isDown) {
             moveCall(Tetris::keyconfig["softdropDelay"].value<int>());
         } else {
@@ -48,6 +44,9 @@ void KeyState::moveCall(int delay)
       else*/
     {
         // func();
+       /* if (isDown) {
+            startTime = std::chrono::high_resolution_clock::now();
+        }*/
         arrHandle = task->setInterval(std::bind(&KeyState::funcChecked, this), delay);
     }
 }
@@ -55,6 +54,11 @@ void KeyState::moveCall(int delay)
 int KeyState::funcChecked()
 {
     if (das || isDown) {
+      /*  if (isDown) {
+            auto delta = test();
+            if (std::abs(delta - Tetris::keyconfig["softdropDelay"].value<int>()) > 3)
+                qDebug() << delta;
+        }*/
         func();
         return 0;
     } else {
@@ -67,19 +71,15 @@ void KeyState::keyUp()
 {
     switchStopFlag = false;
     press = false;
-    if (!noDas) {
-        das = false;
-        stop();
-    }
+    das = false;
+    stop();
 }
 
 void KeyState::switchStop()
 {
     switchStopFlag = true;
-    if (!noDas) {
-        das = false;
-        stop();
-    }
+    das = false;
+    stop();
 }
 
 void KeyState::stop()

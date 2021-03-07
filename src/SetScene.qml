@@ -2,19 +2,14 @@
 import QtQuick.Controls 2.15
 import QtQml 2.2
 import QtQuick.Layouts 1.3
+//import QtQuick.Controls.Basic
+
 Item {
     id: root
     property var tetris: null
-    property alias config: qConfig
     visible: true
     focus: false
     signal replayCall
-
-    QtObject{
-        id:qConfig
-        property bool operTransition: false
-        property bool shadow: true
-    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -55,12 +50,19 @@ Item {
             StackLayout {
                 id: hao1
                 currentIndex: leftBar.currentIndex
+                property int preIndex
+                Component.onCompleted: {
+                    preIndex = currentIndex
+                }
+
                 ScrollView {
-                    visible: true
+                    id: mn
                     clip: true
                     width: parent.width
                     height: parent.height
                     ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                    property int visibleValue: visible ? 0 : 1
+                    FadeBehavior on visibleValue {}
                     Column {
                         width: hao1.width
                         spacing: 10
@@ -147,7 +149,7 @@ Item {
                                 Layout.preferredHeight: 25
                                 Layout.rightMargin: 30
                                 onValueChanged: {
-                                    TetrisConfig.softdropDelay= value
+                                    TetrisConfig.softdropDelay = value
                                 }
                             }
                         }
@@ -167,13 +169,11 @@ Item {
                                 Layout.preferredHeight: 25
                                 Layout.preferredWidth: 50
                                 Layout.rightMargin: 30
-                                text: keyboard.retKey(
-                                          TetrisConfig.leftKey)
+                                text: tetrisConfig.retKey(TetrisConfig.leftKey)
                                 readOnly: true
                                 Keys.onPressed: {
-                                    if (!keyboard.isConflict(
-                                                event.key)) {
-                                        text = keyboard.retKey(event.key)
+                                    if (!tetrisConfig.isConflict(event.key)) {
+                                        text = tetrisConfig.retKey(event.key)
                                         TetrisConfig.leftKey = event.key
                                     }
                                     event.accepted = true
@@ -196,14 +196,12 @@ Item {
                                 Layout.preferredHeight: 25
                                 Layout.preferredWidth: 50
                                 Layout.rightMargin: 30
-                                text: keyboard.retKey(
-                                          TetrisConfig.rightKey)
+                                text: tetrisConfig.retKey(TetrisConfig.rightKey)
                                 readOnly: true
                                 Keys.onPressed: {
-                              //      keyboard.config.right_move = ""
-                                    if (!keyboard.isConflict(
-                                                event.key)) {
-                                        text = keyboard.retKey(event.key)
+                                    //      tetrisConfig.config.right_move = ""
+                                    if (!tetrisConfig.isConflict(event.key)) {
+                                        text = tetrisConfig.retKey(event.key)
                                         TetrisConfig.rightKey = event.key
                                     }
                                     event.accepted = true
@@ -226,14 +224,13 @@ Item {
                                 Layout.preferredHeight: 25
                                 Layout.preferredWidth: 50
                                 Layout.rightMargin: 30
-                                text: keyboard.retKey(
+                                text: tetrisConfig.retKey(
                                           TetrisConfig.softDropKey)
                                 readOnly: true
                                 Keys.onPressed: {
-                                   // keyboard.config.soft_drop = ""
-                                    if (!keyboard.isConflict(
-                                                event.key)) {
-                                        text = keyboard.retKey(event.key)
+                                    // tetrisConfig.config.soft_drop = ""
+                                    if (!tetrisConfig.isConflict(event.key)) {
+                                        text = tetrisConfig.retKey(event.key)
                                         TetrisConfig.softDropKey = event.key
                                     }
                                     event.accepted = true
@@ -256,14 +253,13 @@ Item {
                                 Layout.preferredHeight: 25
                                 Layout.preferredWidth: 50
                                 Layout.rightMargin: 30
-                                text: keyboard.retKey(
+                                text: tetrisConfig.retKey(
                                           TetrisConfig.harddropKey)
                                 readOnly: true
                                 Keys.onPressed: {
-                                    keyboard.config.hard_drop = ""
-                                    if (!keyboard.isConflict(
-                                                event.key)) {
-                                        text = keyboard.retKey(event.key)
+                                    tetrisConfig.config.hard_drop = ""
+                                    if (!tetrisConfig.isConflict(event.key)) {
+                                        text = tetrisConfig.retKey(event.key)
                                         TetrisConfig.harddropKey = event.key
                                     }
                                     event.accepted = true
@@ -286,15 +282,13 @@ Item {
                                 Layout.preferredHeight: 25
                                 Layout.preferredWidth: 50
                                 Layout.rightMargin: 30
-                                text: keyboard.retKey(
-                                         TetrisConfig.ccwKey)
+                                text: tetrisConfig.retKey(TetrisConfig.ccwKey)
                                 readOnly: true
                                 Keys.onPressed: {
-                                    keyboard.config.rotate_normal = ""
-                                    if (!keyboard.isConflict(
-                                                event.key)) {
-                                        text = keyboard.retKey(event.key)
-                                       TetrisConfig.ccwKey = event.key
+                                    tetrisConfig.config.rotate_normal = ""
+                                    if (!tetrisConfig.isConflict(event.key)) {
+                                        text = tetrisConfig.retKey(event.key)
+                                        TetrisConfig.ccwKey = event.key
                                     }
                                     event.accepted = true
                                 }
@@ -316,14 +310,12 @@ Item {
                                 Layout.preferredHeight: 25
                                 Layout.preferredWidth: 50
                                 Layout.rightMargin: 30
-                                text: keyboard.retKey(
-                                          TetrisConfig.cwKey)
+                                text: tetrisConfig.retKey(TetrisConfig.cwKey)
                                 readOnly: true
                                 Keys.onPressed: {
-                                    keyboard.config.rotate_reverse = ""
-                                    if (!keyboard.isConflict(
-                                                event.key)) {
-                                        text = keyboard.retKey(event.key)
+                                    tetrisConfig.config.rotate_reverse = ""
+                                    if (!tetrisConfig.isConflict(event.key)) {
+                                        text = tetrisConfig.retKey(event.key)
                                         TetrisConfig.cwKey = event.key
                                     }
                                     event.accepted = true
@@ -346,14 +338,12 @@ Item {
                                 Layout.preferredHeight: 25
                                 Layout.preferredWidth: 50
                                 Layout.rightMargin: 30
-                                text: keyboard.retKey(
-                                          TetrisConfig.holdKey)
+                                text: tetrisConfig.retKey(TetrisConfig.holdKey)
                                 readOnly: true
                                 Keys.onPressed: {
-                                    keyboard.config.hold = ""
-                                    if (!keyboard.isConflict(
-                                                event.key)) {
-                                        text = keyboard.retKey(event.key)
+                                    tetrisConfig.config.hold = ""
+                                    if (!tetrisConfig.isConflict(event.key)) {
+                                        text = tetrisConfig.retKey(event.key)
                                         TetrisConfig.holdKey = event.key
                                     }
                                     event.accepted = true
@@ -376,14 +366,13 @@ Item {
                                 Layout.preferredHeight: 25
                                 Layout.preferredWidth: 50
                                 Layout.rightMargin: 30
-                                text: keyboard.retKey(
+                                text: tetrisConfig.retKey(
                                           TetrisConfig.restartKey)
                                 readOnly: true
                                 Keys.onPressed: {
-                                    keyboard.config.restart = ""
-                                    if (!keyboard.isConflict(
-                                                event.key)) {
-                                        text = keyboard.retKey(event.key)
+                                    tetrisConfig.config.restart = ""
+                                    if (!tetrisConfig.isConflict(event.key)) {
+                                        text = tetrisConfig.retKey(event.key)
                                         TetrisConfig.restartKey = event.key
                                     }
                                     event.accepted = true
@@ -406,14 +395,12 @@ Item {
                                 Layout.preferredHeight: 25
                                 Layout.preferredWidth: 50
                                 Layout.rightMargin: 30
-                                text: keyboard.retKey(
-                                          TetrisConfig.replay)
+                                text: tetrisConfig.retKey(TetrisConfig.replay)
                                 readOnly: true
                                 Keys.onPressed: {
-                                    keyboard.config.replay = ""
-                                    if (!keyboard.isConflict(
-                                                event.key)) {
-                                        text = keyboard.retKey(event.key)
+                                    tetrisConfig.config.replay = ""
+                                    if (!tetrisConfig.isConflict(event.key)) {
+                                        text = tetrisConfig.retKey(event.key)
                                         TetrisConfig.replay = event.key
                                     }
                                     event.accepted = true
@@ -436,14 +423,12 @@ Item {
                                 Layout.preferredHeight: 25
                                 Layout.preferredWidth: 50
                                 Layout.rightMargin: 30
-                                text: keyboard.retKey(
-                                          TetrisConfig.bot)
+                                text: tetrisConfig.retKey(TetrisConfig.bot)
                                 readOnly: true
                                 Keys.onPressed: {
-                                    //keyboard.config.ai = ""
-                                    if (!keyboard.isConflict(
-                                                event.key)) {
-                                        text = keyboard.retKey(event.key)
+                                    //tetrisConfig.config.ai = ""
+                                    if (!tetrisConfig.isConflict(event.key)) {
+                                        text = tetrisConfig.retKey(event.key)
                                         TetrisConfig.bot = event.key
                                     }
                                     event.accepted = true
@@ -457,6 +442,8 @@ Item {
                     width: parent.width
                     spacing: 10
                     padding: 20
+                    property int visibleValue: visible ? 0 : 1
+                    FadeBehavior on visibleValue {}
                     RowLayout {
                         width: parent.width
                         Text {
@@ -471,8 +458,8 @@ Item {
                             Layout.preferredHeight: 25
                             Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
                             Layout.rightMargin: 30
-                            checked: config.shadow
-                            onCheckedChanged: config.shadow = checked
+                            checked: tetrisConfig.shadow
+                            onCheckedChanged: tetrisConfig.shadow = checked
                         }
                     }
                     RowLayout {
@@ -489,8 +476,8 @@ Item {
                             Layout.preferredHeight: 25
                             Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
                             Layout.rightMargin: 30
-                            checked: config.operTransition
-                            onCheckedChanged: config.operTransition = checked
+                            checked: tetrisConfig.operTransition
+                            onCheckedChanged: tetrisConfig.operTransition = checked
                         }
                     }
                     RowLayout {
@@ -528,6 +515,8 @@ Item {
                     spacing: 10
                     width: parent.width
                     height: parent.height
+                    property int visibleValue: visible ? 0 : 1
+                    FadeBehavior on visibleValue {}
                     Label {
                         font.family: "Loma"
                         font.pixelSize: 17

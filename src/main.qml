@@ -11,8 +11,8 @@ Window {
     visible: true
     title: qsTr("堆垛机")
 
-    ControlKey{
-       id:keyboard
+    ControlKey {
+        id: tetrisConfig
     }
 
     ListView {
@@ -100,6 +100,7 @@ Window {
                     w.restart()
                     w1.restart()
                 }
+
                 TetrisUI {
                     id: m
                     tetris: w
@@ -123,7 +124,7 @@ Window {
                 tetris: w
                 anchors.fill: parent
                 onReplayCall: function () {
-                    view.currentIndex = 0
+                    guideBar.currentIndex = 0
                 }
             }
         }

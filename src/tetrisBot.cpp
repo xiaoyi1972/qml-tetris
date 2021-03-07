@@ -387,12 +387,6 @@ TetrisBot::EvalResult TetrisBot::evalute(TetrisNode &lp, TetrisMap &map, int cle
         m.roof = map.height - map.roof;
         m.lowestRoof = map.height;
 
-        auto colTransCount = [&map](int j) {
-            auto ct = (map.data[j] ^
-                       (map.data[j] & (1 << (map.width - 1)) ? (map.data[j] >> 1) | (1 << (map.width - 1)) : map.data[j] >> 1));
-            return BitCount(ct);
-        };
-
         //行列变换
         for (auto j = (map.roof == 0 ?  0 : map.roof - 1); j < map.height; j++) {
             auto ct = (map.data[j] ^
@@ -415,12 +409,13 @@ TetrisBot::EvalResult TetrisBot::evalute(TetrisNode &lp, TetrisMap &map, int cle
             if (LineHole != 0) {
                 m.holes += BitCount(LineHole);
                 m.holeLines++;
+                //  if (m.holeLines == 1)
                 for (auto hy = y - 1; hy >= map.roof; hy--) {
                     auto CheckLine = LineHole & map.data[hy];
                     if (CheckLine == 0) {
                         break;
                     }
-                    m.clearWidth += ((map.width - BitCount(map.data[hy])) /*+ colTransCount(hy)*/) /* hy*/; //(BitCount(map.data[hy]));
+                    m.clearWidth += ((map.width - BitCount(map.data[hy])));
                 }
             }
             widthL1 = std::min<int>(widthL1, map.width - BitCount(LineCoverBits));
@@ -652,14 +647,10 @@ TetrisBot::Status TetrisBot::get(const TetrisBot::EvalResult &evalResult, Tetris
     default: break;
     }
 
-    result.maxCombo = std::max(result.combo, result.maxCombo);
     result.maxAttack = std::max(result.attack, result.maxAttack);
-    auto thisAttack = result.attack - status.attack;
-    auto &clear = evalResult.clear;
-    // return result;
+    //  return result;
     result.value += ((0.
-                      + (clear != 0 ? thisAttack / clear : 0) * result.combo  * 40
-                      + result.maxAttack * 40
+                      + result.attack * 40
                       + result.like * 6
                       + (result.b2b ? (result.cutB2b ? 101 * 0.5 : 101) : 0)
                       + (result.cutB2b ? 0 : std::max(evalResult.t2Value, 0) * 30)
@@ -901,13 +892,15 @@ void  TreeNode::run()
 
 TreeContext::Result TreeNode::getBest()
 {
-    TreeNode *best = nullptr;
-    for (const auto &level : context->level) {
-        if (!level.empty()) {
-            best = level.top();
-            break;
+    auto &lastLevel = context->level;
+    TreeNode *best = lastLevel.first().empty() ? nullptr : lastLevel.first().top();
+    if (best == nullptr)
+        for (const auto &level : context->extendedLevel) {
+            if (!level.empty()) {
+                best = level.top();
+                break;
+            }
         }
-    }
     if (best == nullptr)
         return context->empty();
     QVector<TreeNode *> record{best};

@@ -2,6 +2,7 @@ QT += quick
 
 CONFIG += c++17
 CONFIG +=qtquickcompiler
+QT+=quickcontrols2
 #CONFIG += qtquickcompilerqmake
 
 #CONFIG += qmltypes

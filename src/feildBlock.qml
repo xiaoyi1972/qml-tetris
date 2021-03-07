@@ -1,23 +1,29 @@
 ﻿import QtQuick 2.15
 import QtQuick.Shapes 1.15
-Rectangle {
+
+  Rectangle {
     id: root
     property bool dying: false
     property bool spawned: false
     opacity: 1
-    scale:0.95
+
     Behavior on y {
         id: that
         SmoothedAnimation {
-            velocity: 200
-            duration: 100
+            velocity: -1
+            duration: 100 //100
         }
     }
 
-    Behavior on opacity {
-        id: opacityAni
-        OpacityAnimator {
-            duration: 100
+    OpacityAnimator {
+        id: opA
+        target: root
+        from: 1
+        to: 0
+        duration: 100
+        onFinished: {
+            root.visible = false
+            root.destroy()
         }
     }
 
@@ -25,11 +31,13 @@ Rectangle {
         id: colorAni
         target: root
         property: "color"
-        from: Qt.tint(root.color, Qt.hsla(
-                            root.color.hslHue,
-                            Math.max(Math.ceil(root.color.hslSaturation * 100) - 30,0) / 100,
-                            Math.max(Math.ceil(root.color.hslLightness * 100 + 50), 100) / 100,
-                            root.color.a))
+        from: Qt.tint(
+                  root.color, Qt.hsla(
+                      root.color.hslHue, Math.max(
+                          Math.ceil(root.color.hslSaturation * 100) - 30,
+                          0) / 100,
+                      Math.max(Math.ceil(
+                                   root.color.hslLightness * 100 + 50), 100) / 100, root.color.a))
         to: root.color
         duration: 130
     }
@@ -42,18 +50,13 @@ Rectangle {
                 target: root
             }
         },
-
         State {
             name: "DeathState"
             when: dying == true
-            PropertyChanges {
-                target: root
-                opacity: 0
-            }
             StateChangeScript {
                 script: {
                     colorAni.stop()
-                    root.destroy(100)
+                    opA.start()
                 }
             }
         }
@@ -62,9 +65,7 @@ Rectangle {
     function banAimate(is) {
         that.enabled = is
     }
-    function banFlash(is) {
-        opacityAni.enabled = is
-    }
+
     function playColor() {
         colorAni.start()
     }

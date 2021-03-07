@@ -9,5 +9,6 @@
         <file>TetrisUI.qml</file>
         <file>BasicTabButton.qml</file>
         <file>ControlKey.qml</file>
+        <file>FadeBehavior.qml</file>
     </qresource>
 </RCC>

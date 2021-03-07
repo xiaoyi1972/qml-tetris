@@ -29,7 +29,6 @@ struct Status {
     bool deaded = false;
     int attack = 0;
     int like = 0;
-    int maxCombo = 0;
     int maxAttack = 0;
     double value = 0.;
     int mapRise = 0;
@@ -39,7 +38,6 @@ struct Status {
     {
         return this->value < other.value;
     }
-
 };
 
 struct EvalResult {
