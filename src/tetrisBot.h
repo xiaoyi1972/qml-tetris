@@ -1,18 +1,30 @@
 ﻿#ifndef TETRISBOT_H
 #define TETRISBOT_H
 #include<QVector>
-#include<QSet>
+#include<unordered_set>
 #include<tetrisBase.h>
 #include<array>
 #include<queue>
-#include<QtConcurrent>
 #include<limits>
-#include <algorithm>
-#include <functional>
+#include<algorithm>
+#include<functional>
+#include<execution>
+#include<mutex>
+template<class T>
+T BitCount(T n) {
+    n = n - ((n >> 1) & 0x55555555);
+    n = (n & 0x33333333) + ((n >> 2) & 0x33333333);
+    n = (n + (n >> 4)) & 0x0f0f0f0f;
+    n = n + (n >> 8);
+    n = n + (n >> 16);
+    return n & 0x3f;
+}
+template<class T, class ... Ts>
+T BitCount(T first, Ts ... rest) {
+    return BitCount(first) + BitCount(rest...);
+}
 
-int BitCount(int);
-namespace Tool
-{
+namespace Tool {
 QString  printType(Piece);
 void printMap(TetrisMap &);
 QString printNode(TetrisNode &);
@@ -21,8 +33,7 @@ QString printOper(Oper &);
 void sleepTo(int msec);
 }
 
-namespace TetrisBot
-{
+namespace TetrisBot {
 struct Status {
     int combo = 0;
     bool b2b = false;
@@ -30,20 +41,22 @@ struct Status {
     int attack = 0;
     int like = 0;
     int maxAttack = 0;
+    int maxCombo = 0;
     double value = 0.;
     int mapRise = 0;
     int underAttack = 0;
     bool cutB2b = false;
-    bool operator<(const Status &other) const
-    {
+    double t2Value = 0.;
+    double t3Value = 0.;
+    bool operator<(const Status &other) const {
         return this->value < other.value;
     }
 };
 
 struct EvalResult {
     int safe = 0;
-    int t2Value = 0;
-    int t3Value = 0;
+    double t2Value = 0.;
+    double t3Value = 0.;
     double value = 0.;
     int clear = 0;
     int count = 0;
@@ -59,8 +72,7 @@ TetrisBot::Status get(const TetrisBot::EvalResult &, TetrisBot::Status &, Piece)
 
 class TreeNode;
 class TreeNodeCompare;
-class TreeContext
-{
+class TreeContext {
 public:
     TreeContext() {};
     ~TreeContext();
@@ -72,6 +84,7 @@ public:
     Result getBest();
     static QVector<TetrisNode> nodes;
     static std::array<int, 13> comboTable;
+    static int noneZeroComboIndex;
 private:
     friend class TreeNode;
     using treeQueue = std::priority_queue<TreeNode *, std::vector<TreeNode *>, TreeNodeCompare>;
@@ -87,22 +100,21 @@ private:
     int tCount = 0;
 };
 
-class TreeNodeCompare
-{
+class TreeNodeCompare {
 public:
     bool operator()(TreeNode *const &a, TreeNode *const &b) const ;
 };
 
-class TreeNode
-{
+class TreeNode {
 public:
     struct EvalParm {
         TetrisNode land_node;
         int clear = 0;
         TetrisBot::Status status;
+        int needSd = 0;
     };
     TreeNode() {}
-    TreeNode(TreeContext *, TreeNode *, TetrisNode &, TetrisMap &, int, Piece, bool,  EvalParm &);
+    TreeNode(TreeContext *, TreeNode *, TetrisNode &, TetrisMap, int, Piece, bool,  EvalParm &);
     void printInfoReverse(TetrisMap &, TreeNode *);
     TreeNode *generateChildNode(TetrisNode &, bool, Piece, bool);
     void search();

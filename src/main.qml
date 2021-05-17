@@ -2,7 +2,7 @@
 import QtQuick.Controls 2.15
 import QtQuick.Window 2.15
 import Tetris 1.0
-import "tetrisgame.js" as TetrisGame
+
 
 Window {
     id: window
@@ -10,9 +10,9 @@ Window {
     height: 500
     visible: true
     title: qsTr("堆垛机")
-
     ControlKey {
         id: tetrisConfig
+        property var my:[]
     }
 
     ListView {
@@ -65,54 +65,83 @@ Window {
         FocusScope {
             id: battlePage
             clip: true
-            focus: true
+           // focus: true
+
+            /*Column{
+            TetrisTetro{
+                tight:true
+                type:2
+            }
+            TetrisTetro{
+                tight:true
+                type:0
+            }
+            TetrisTetro{
+                tight:true
+                type:1
+            }
+            }*/
+
+/*
             Tetris {
+                x:0
+                y:0
+                scale:0.88
+                width:200
+                height:400
                 id: w
                 focus: true
-                property var viewTetris: new TetrisGame.View(m, this)
+            //    property var viewTetris: new TetrisGame.View(m, this)
                 onSendAttack: function (trash) {
                     w1.getTrash(trash)
                 }
                 Component.onCompleted: {
-                    viewTetris.startNewGame()
+              //      viewTetris.startNewGame()
                     restart()
                 }
             }
 
             Tetris {
                 id: w1
+                visible: false
                 //  focus: true
-                property var viewTetris: new TetrisGame.View(m1, this)
+              //  property var viewTetris: new TetrisGame.View(m1, this)
                 onSendAttack: function (trash) {
                     w.getTrash(trash)
                 }
                 Component.onCompleted: {
-                    viewTetris.startNewGame()
+               //     viewTetris.startNewGame()
                     restart()
                 }
-            }
+            }*/
 
             Row {
                 spacing: 130
                 anchors.centerIn: parent
                 id: buxing
                 function restartGames() {
-                    w.restart()
-                    w1.restart()
+                 //   console.log(tetrisConfig.my)
+                    for(let i  of tetrisConfig.my){
+                        i.restart()
+            //        w.restart()
+             //       w1.restart()
+                    }
                 }
 
-                TetrisUI {
+               TetrisUI {
                     id: m
-                    tetris: w
-                    tetrisGame: TetrisGame
-                    scale: 0.8
+                    scale: 0.7
+                    Component.onCompleted: {
+                    tetris.focus = true
+                   }
                 }
 
-                TetrisUI {
+               TetrisUI {
                     id: m1
-                    tetris: w1
-                    tetrisGame: TetrisGame
-                    scale: 0.8
+                    scale: 0.7
+                    Component.onCompleted: {
+                    tetris.focus = true
+                   }
                 }
             }
         }
@@ -121,7 +150,7 @@ Window {
             id: settingPage
             SetScene {
                 id: setscene
-                tetris: w
+                tetris: m.tetris
                 anchors.fill: parent
                 onReplayCall: function () {
                     guideBar.currentIndex = 0

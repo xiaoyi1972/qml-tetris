@@ -3,6 +3,7 @@ QT += quick
 CONFIG += c++17
 CONFIG +=qtquickcompiler
 QT+=quickcontrols2
+QT += quick
 #CONFIG += qtquickcompilerqmake
 
 #CONFIG += qmltypes
@@ -14,11 +15,11 @@ QT+=quickcontrols2
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-        keystate.cpp \
         main.cpp \
         tetris.cpp \
         tetrisBase.cpp \
-        tetrisBot.cpp
+        tetrisBot.cpp \
+        tetrisGame.cpp
 
 RESOURCES += \
     qml.qrc
@@ -28,10 +29,11 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
-    keystate.h \
+    keyState.hpp \
     tetris.h \
     tetrisBase.h \
-    tetrisBot.h
+    tetrisBot.h \
+    tetrisGame.h
 
 QT += concurrent
 

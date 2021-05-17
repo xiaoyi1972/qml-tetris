@@ -465,24 +465,6 @@ Item {
                     RowLayout {
                         width: parent.width
                         Text {
-                            text: "移动旋转过渡"
-                            color: "black"
-                            font {
-                                family: "Loma"
-                                pixelSize: 17
-                            }
-                        }
-                        Switch {
-                            Layout.preferredHeight: 25
-                            Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                            Layout.rightMargin: 30
-                            checked: tetrisConfig.operTransition
-                            onCheckedChanged: tetrisConfig.operTransition = checked
-                        }
-                    }
-                    RowLayout {
-                        width: parent.width
-                        Text {
                             text: "机器人耗费时间"
                             color: "black"
                             font {

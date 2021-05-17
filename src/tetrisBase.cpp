@@ -1,8 +1,7 @@
 ﻿#include "tetrisBase.h"
-QMap<bool, QVector<QVector<int>>> TetrisNode::kickDatas = std::invoke([]()
-{
-    QMap<bool, QVector<QVector<int>>> kickDatasTo;
-    QVector<data> NomalkickData {//kickDatas for Piece Others
+std::map<bool, std::vector<std::vector<int>>> TetrisNode::kickDatas = std::invoke([]() {
+    std::map<bool, std::vector<std::vector<int>>> kickDatasTo;
+    std::vector<data> NomalkickData {//kickDatas for Piece Others
         data{-1, 0, -1, 1, 0, -2, -1, -2},//0->R
         data{  1, 0, 1, -1, 0, 2, 1, 2},  //R->0
         data{   1, 0, 1, -1, 0, 2, 1, 2}, //R->2
@@ -12,7 +11,7 @@ QMap<bool, QVector<QVector<int>>> TetrisNode::kickDatas = std::invoke([]()
         data{  -1, 0, -1, -1, 0, 2, -1, 2}, //L->0
         data{  1, 0, 1, 1, 0, -2, 1, -2}//0->L
     };
-    QVector<data > IkickData {//kickDatas for Piece I
+    std::vector<data > IkickData {//kickDatas for Piece I
         data{-2, 0, 1, 0, -2, -1, 1, 2}, //0->R
         data{2, 0, -1, 0, 2, 1, -1, -2},  //R->0
         data{-1, 0, 2, 0, -1, 2, 2, -1}, //R->2
@@ -22,14 +21,13 @@ QMap<bool, QVector<QVector<int>>> TetrisNode::kickDatas = std::invoke([]()
         data{ 1, 0, -2, 0, 1, -2, -2, 1}, //L->0
         data{ -1, 0, 2, 0, -1, 2, 2, -1}, //0->L
     };
-    kickDatasTo.insert(true, std::move(NomalkickData));
-    kickDatasTo.insert(false, std::move(IkickData));
+    kickDatasTo.insert({true, std::move(NomalkickData)});
+    kickDatasTo.insert({false, std::move(IkickData)});
     return kickDatasTo;
 });
 
-QMap<Piece, QVector<QVector<int>>> TetrisNode::rotateDatas = std::invoke([]()
-{
-    QMap<Piece, QVector<QVector<int>>> rotateDatasTo;
+std::map<Piece, std::vector<std::vector<int>>> TetrisNode::rotateDatas = std::invoke([]() {
+    std::map<Piece, std::vector<std::vector<int>>> rotateDatasTo;
     using mino = std::pair<Piece, data>;
     mino minoTypes[] {
         mino{Piece::None, data{}},
@@ -43,10 +41,9 @@ QMap<Piece, QVector<QVector<int>>> TetrisNode::rotateDatas = std::invoke([]()
     };
     auto rot = [ ](data & block) {
         auto lh = block.size();
-        data newLayout;
-        newLayout.fill(0, lh);
+        data newLayout(lh, 0);
         auto mdata = newLayout.data();
-        for (auto x = 0; x < lh; x++)  //顺时针旋转
+        for (auto x = 0; x < lh; x++)  //rotate normal
             for (auto y = 0; y < lh; y++) {
                 auto ry = lh - 1 - y;
                 mdata[x] = ((block[y] & (1 << x)) > 0) ? (mdata[x] | (1 << ry)) : (mdata[x] & (~(1 << ry)));
@@ -54,10 +51,10 @@ QMap<Piece, QVector<QVector<int>>> TetrisNode::rotateDatas = std::invoke([]()
         return newLayout;
     };
     for (auto &p : minoTypes) {
-        QVector<data> sArr{std::get<1>(p)};
+        std::vector<data> sArr{std::get<1>(p)};
         while (sArr.size() < 4)
-            sArr.append(rot(sArr.last()));
-        rotateDatasTo.insert(std::get<0>(p), std::move(sArr));
+            sArr.push_back(rot(sArr.back()));
+        rotateDatasTo.insert({std::get<0>(p), std::move(sArr)});
     }
     return rotateDatasTo;
 });

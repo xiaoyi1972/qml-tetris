@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 4.14.1, 2021-03-07T11:31:10. -->
+<!-- Written by QtCreator 4.14.0, 2021-05-13T17:42:18. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -70,8 +70,8 @@
    <valuelist type="QVariantList" key="ClangCodeModel.CustomCommandLineKey">
     <value type="QString">-fno-delayed-template-parsing</value>
    </valuelist>
-   <value type="bool" key="ClangCodeModel.UseGlobalConfig">true</value>
-   <value type="QString" key="ClangCodeModel.WarningConfigId">Builtin.Questionable</value>
+   <value type="bool" key="ClangCodeModel.UseGlobalConfig">false</value>
+   <value type="QString" key="ClangCodeModel.WarningConfigId">{8ff55fa9-8699-43c4-a22f-e82df7512381}</value>
    <valuemap type="QVariantMap" key="ClangTools">
     <value type="bool" key="ClangTools.AnalyzeOpenFiles">false</value>
     <value type="bool" key="ClangTools.BuildBeforeAnalysis">true</value>
@@ -88,16 +88,16 @@
   <variable>ProjectExplorer.Project.Target.0</variable>
   <valuemap type="QVariantMap">
    <value type="QString" key="DeviceType">Desktop</value>
-   <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">qt6</value>
-   <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">qt6</value>
-   <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">{7af2ad5e-4c58-46b0-a233-5e659bf19257}</value>
+   <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">Desktop (x86-windows-msvc2019-pe-64bit)</value>
+   <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">Desktop (x86-windows-msvc2019-pe-64bit)</value>
+   <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">{914be13a-ad29-4941-ab01-be9d9065692f}</value>
    <value type="int" key="ProjectExplorer.Target.ActiveBuildConfiguration">1</value>
    <value type="int" key="ProjectExplorer.Target.ActiveDeployConfiguration">0</value>
    <value type="int" key="ProjectExplorer.Target.ActiveRunConfiguration">0</value>
    <valuemap type="QVariantMap" key="ProjectExplorer.Target.BuildConfiguration.0">
-    <value type="int" key="EnableQmlDebugging">0</value>
-    <value type="QString" key="ProjectExplorer.BuildConfiguration.BuildDirectory">D:\qtproject\qml-tetris-master\build-tetris-qt6-Debug</value>
-    <value type="QString" key="ProjectExplorer.BuildConfiguration.BuildDirectory.shadowDir">D:/qtproject/qml-tetris-master/build-tetris-qt6-Debug</value>
+    <value type="int" key="EnableQmlDebugging">1</value>
+    <value type="QString" key="ProjectExplorer.BuildConfiguration.BuildDirectory">D:\qtproject\qml-tetris-master\build-tetris-Desktop_x86_windows_msvc2019_pe_64bit-Debug</value>
+    <value type="QString" key="ProjectExplorer.BuildConfiguration.BuildDirectory.shadowDir">D:/qtproject/qml-tetris-master/build-tetris-Desktop_x86_windows_msvc2019_pe_64bit-Debug</value>
     <valuemap type="QVariantMap" key="ProjectExplorer.BuildConfiguration.BuildStepList.0">
      <valuemap type="QVariantMap" key="ProjectExplorer.BuildStepList.Step.0">
       <value type="bool" key="ProjectExplorer.BuildStep.Enabled">true</value>
@@ -136,9 +136,8 @@
     <value type="int" key="RunSystemFunction">0</value>
    </valuemap>
    <valuemap type="QVariantMap" key="ProjectExplorer.Target.BuildConfiguration.1">
-    <value type="int" key="EnableQmlDebugging">0</value>
-    <value type="QString" key="ProjectExplorer.BuildConfiguration.BuildDirectory">D:\qtproject\qml-tetris-master\build-tetris-qt6-Release</value>
-    <value type="QString" key="ProjectExplorer.BuildConfiguration.BuildDirectory.shadowDir">D:/qtproject/qml-tetris-master/build-tetris-qt6-Release</value>
+    <value type="QString" key="ProjectExplorer.BuildConfiguration.BuildDirectory">D:\qtproject\qml-tetris-master\build-tetris-Desktop_x86_windows_msvc2019_pe_64bit-Release</value>
+    <value type="QString" key="ProjectExplorer.BuildConfiguration.BuildDirectory.shadowDir">D:/qtproject/qml-tetris-master/build-tetris-Desktop_x86_windows_msvc2019_pe_64bit-Release</value>
     <valuemap type="QVariantMap" key="ProjectExplorer.BuildConfiguration.BuildStepList.0">
      <valuemap type="QVariantMap" key="ProjectExplorer.BuildStepList.Step.0">
       <value type="bool" key="ProjectExplorer.BuildStep.Enabled">true</value>
@@ -179,8 +178,8 @@
    </valuemap>
    <valuemap type="QVariantMap" key="ProjectExplorer.Target.BuildConfiguration.2">
     <value type="int" key="EnableQmlDebugging">0</value>
-    <value type="QString" key="ProjectExplorer.BuildConfiguration.BuildDirectory">D:\qtproject\qml-tetris-master\build-tetris-qt6-Profile</value>
-    <value type="QString" key="ProjectExplorer.BuildConfiguration.BuildDirectory.shadowDir">D:/qtproject/qml-tetris-master/build-tetris-qt6-Profile</value>
+    <value type="QString" key="ProjectExplorer.BuildConfiguration.BuildDirectory">D:\qtproject\qml-tetris-master\build-tetris-Desktop_x86_windows_msvc2019_pe_64bit-Profile</value>
+    <value type="QString" key="ProjectExplorer.BuildConfiguration.BuildDirectory.shadowDir">D:/qtproject/qml-tetris-master/build-tetris-Desktop_x86_windows_msvc2019_pe_64bit-Profile</value>
     <valuemap type="QVariantMap" key="ProjectExplorer.BuildConfiguration.BuildStepList.0">
      <valuemap type="QVariantMap" key="ProjectExplorer.BuildStepList.Step.0">
       <value type="bool" key="ProjectExplorer.BuildStep.Enabled">true</value>
@@ -302,7 +301,7 @@
     <value type="bool" key="RunConfiguration.UseLibrarySearchPath">true</value>
     <value type="bool" key="RunConfiguration.UseQmlDebugger">false</value>
     <value type="bool" key="RunConfiguration.UseQmlDebuggerAuto">true</value>
-    <value type="QString" key="RunConfiguration.WorkingDirectory.default">D:/qtproject/qml-tetris-master/build-tetris-qt6-Release</value>
+    <value type="QString" key="RunConfiguration.WorkingDirectory.default">D:/qtproject/qml-tetris-master/build-tetris-Desktop_x86_windows_msvc2019_pe_64bit-Release</value>
    </valuemap>
    <value type="int" key="ProjectExplorer.Target.RunConfigurationCount">1</value>
   </valuemap>

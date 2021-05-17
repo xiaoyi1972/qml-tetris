@@ -1,18 +1,17 @@
-import QtQuick 2.15
+﻿import QtQuick 2.15
 import QtQuick.Shapes 1.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import Tetris 1.0
+import "tetrisgame.js" as TetrisGame
 
 Item {
     id: root
     width: tetrisConfig.blockSize * tetrisConfig.maxColumn
     height: tetrisConfig.blockSize * (tetrisConfig.maxRow + tetrisConfig.rowOver)
     property var heightInline: tetrisConfig.blockSize * tetrisConfig.maxRow
-    property var tetrisGame: null
-    property var tetris: null
-    property alias background: background
-    property alias active: fk
-    property alias shadow: shadow
+    property alias tetris: tetris
+    property var view: new TetrisGame.View(this, this.tetris)
     property alias nexts: nextsC
     property alias hold: hold
     property alias effectClear: effectClear
@@ -56,142 +55,12 @@ Item {
         }
     }
 
-    Item {
-        anchors.fill: parent
-        layer.enabled: true
-        visible: true
-
-        Item {
-            id: background
-            anchors.fill: parent
-            property double range: 1
-            NumberAnimation {
-                id: animationDead
-                target: background
-                property: "range"
-                from: 1
-                to: 0
-                duration: 1000
-            }
-            function playDead() {
-                animationDead.start()
-            }
-            function stop() {
-                animationDead.stop()
-            }
-           /* layer.enabled: true
-            layer.effect: ShaderEffect {
-                property variant src: background
-                property double range: background.range
-                property double unVisible: (root.tetrisGame.RowOver)
-                                           / (root.tetrisGame.maxRow + root.tetrisGame.RowOver)
-                vertexShader: "
-uniform highp mat4 qt_Matrix;
-attribute highp vec4 qt_Vertex;
-attribute highp vec2 qt_MultiTexCoord0;
-varying highp vec2 coord;
-void main() {
-coord = qt_MultiTexCoord0;
-gl_Position = qt_Matrix * qt_Vertex;
-}"
-                fragmentShader: "
-varying highp vec2 coord;
-uniform sampler2D src;
-uniform float range;
-uniform float unVisible;
-uniform lowp float qt_Opacity;
-void main() {
-lowp vec4 tex = texture2D(src, coord);
-float test= step(coord.y,range);
-tex.rgb=mix(vec3(0.6,0.6,0.6),tex.rgb,test);
-tex.a=tex.a*step(unVisible,coord.y);
-gl_FragColor =vec4(tex.rgb,tex.a);
-}"
-            }*/
-        }
-
-        Mino {
-            id: fk
-            tight: false
-            property int rs: 0
-            property int xyDuration: 50
-            property int rDuration: 60
-            property bool banAni: true
-            rotation: 0
-            transformOrigin: Item.Center
-      //      layer.enabled: false
-            Behavior on x {
-                id: xb
-                enabled: fk.banAni && tetrisConfig.operTransition
-                SmoothedAnimation {
-                    duration: Math.ceil(
-                                  fk.xyDuration / Math.ceil(
-                                      Math.abs(
-                                          xb.targetValue - fk.x) / tetrisConfig.blockSize + .1))
-                    velocity: -1
-                }
-            }
-            Behavior on y {
-                id: yb
-                enabled: fk.banAni && tetrisConfig.operTransition
-                SmoothedAnimation {
-                    duration: Math.ceil(
-                                  fk.xyDuration / Math.ceil(
-                                      Math.abs(
-                                          yb.targetValue - fk.y) / tetrisConfig.blockSize + .1))
-                    velocity: -1
-                }
-            }
-            Behavior on rotation {
-                id: rsb
-                enabled: fk.banAni && tetrisConfig.operTransition
-                RotationAnimation {
-                    duration: fk.rDuration
-                    direction: RotationAnimator.Shortest
-                }
-            }
-            function toggleBehavior(is) {
-                fk.banAni = is
-            }
-        }
-
-        Mino {
-            id: shadow
-            visible: true
-            property int rs: 0
-            property int xyDuration: 50
-            property bool banAni: true
-            property double yMoving
-            tight: false
-            transformOrigin: Item.Center
-            rotation: 0
-            shadow: true
-            y: Math.floor(shadow.yMoving / tetrisConfig.blockSize) * tetrisConfig.blockSize
-            Behavior on x {
-                id: xb1
-                enabled: shadow.banAni && tetrisConfig.operTransition
-                SmoothedAnimation {
-                    duration: Math.ceil(
-                                  shadow.xyDuration / Math.ceil(
-                                      Math.abs(
-                                          xb1.targetValue - shadow.x) / tetrisConfig.blockSize + .1))
-                    velocity: -1
-                }
-            }
-            Behavior on yMoving {
-                id: yb1
-                enabled: shadow.banAni && tetrisConfig.operTransition
-                SmoothedAnimation {
-                    duration: Math.ceil(
-                                  shadow.xyDuration / Math.ceil(
-                                      Math.abs(
-                                          yb1.targetValue - shadow.yMoving) / tetrisConfig.blockSize + .1))
-                    velocity: -1
-                }
-            }
-            function toggleBehavior(is) {
-                shadow.banAni = is
-            }
+    Tetris {
+        id: tetris
+        width: 200
+        height: 400
+        Component.onCompleted: {
+            restart()
         }
     }
 
@@ -244,11 +113,15 @@ gl_FragColor =vec4(tex.rgb,tex.a);
             spacing: 20
             reuseItems: true
             model: ListModel {}
-            delegate: Mino {
-                ListView.onPooled: create(-1)
-                ListView.onReused: create(minoType)
+            delegate: TetrisTetro {
+                tight: true
+                ListView.onPooled: visible = false
+                ListView.onReused: {
+                    type = minoType
+                    visible = true
+                }
                 Component.onCompleted: {
-                    create(minoType)
+                    type = minoType
                 }
             }
             displaced: Transition {
@@ -284,11 +157,12 @@ gl_FragColor =vec4(tex.rgb,tex.a);
         horizontalAlignment: Text.AlignRight
     }
 
-    Mino {
+    TetrisTetro {
+        id: hold
+        tight: true
         anchors.topMargin: 10
         anchors.top: holdText.bottom
         anchors.right: holdText.right
-        id: hold
     }
 
     ColumnLayout {
